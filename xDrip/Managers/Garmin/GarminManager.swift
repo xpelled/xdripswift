@@ -15,8 +15,8 @@ public class GarminManager: NSObject {
     /// The unique UUID of your Garmin Data Field (from manifest.xml)
     private let garminAppId = UUID(uuidString: "A3421FEE-D289-106A-538C-B9547AB3F101")
     
-    /// Closure that provides a pre-formatted display string and numeric BG on demand (injected by RootViewController)
-    public var displayStringProvider: (() -> (display: String, bgValue: Float)?)?
+    /// Closure that provides Garmin data components on demand (injected by RootViewController)
+    public var garminDataProvider: (() -> (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float)?)?
     
     private override init() {
         super.init()
@@ -52,18 +52,15 @@ public class GarminManager: NSObject {
         return false
     }
     
-    /// Push a pre-formatted display string and numeric BG value to the Garmin data field
-    /// - Parameters:
-    ///   - displayString: Formatted string for display (e.g. "2m 142 ↗ +3")
-    ///   - bgValue: Numeric BG value for FIT file recording (in user's chosen unit)
-    public func pushToGarmin(displayString: String, bgValue: Float) {
+    /// Push BG data components to the Garmin data field
+    public func pushToGarmin(bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
         let connectionType = GarminConnectionType(rawValue: UserDefaults.standard.garminConnectionType) ?? .connectIQ
         
         switch connectionType {
         case .connectIQ:
-            pushViaConnectIQ(displayString: displayString, bgValue: bgValue)
+            pushViaConnectIQ(bgStr: bgStr, trendStr: trendStr, deltaStr: deltaStr, timestamp: timestamp, bgValue: bgValue)
         case .ble:
-            pushViaBLE(displayString: displayString, bgValue: bgValue)
+            print("BLE push not implemented yet.")
         }
     }
     
@@ -92,7 +89,7 @@ public class GarminManager: NSObject {
         #endif
     }
 
-    private func pushViaConnectIQ(displayString: String, bgValue: Float) {
+    private func pushViaConnectIQ(bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
         #if canImport(ConnectIQ)
         guard let appId = garminAppId else { return }
         
@@ -104,7 +101,10 @@ public class GarminManager: NSObject {
         let app = IQApp(uuid: appId, store: nil, device: device)
         
         let message: [AnyHashable: Any] = [
-            "display": displayString,
+            "bgStr": bgStr,
+            "trend": trendStr,
+            "delta": deltaStr,
+            "ts": timestamp,
             "bg": bgValue
         ]
         
@@ -118,9 +118,8 @@ public class GarminManager: NSObject {
         ConnectIQ.sharedInstance()?.sendMessage(message, to: app, progress: { (sent, total) in
             // Handle progress
         }, completion: { (result) in
-            // Handle result
             if result == .success {
-                print("Successfully sent to Garmin: \(displayString)")
+                print("Successfully sent to Garmin: \(bgStr) \(trendStr) \(deltaStr)")
             } else {
                 print("Failed to send BG to Garmin. Result code: \(result.rawValue)")
             }
@@ -128,11 +127,6 @@ public class GarminManager: NSObject {
         #else
         print("ConnectIQ framework not imported. Cannot push via Connect IQ.")
         #endif
-    }
-    
-    private func pushViaBLE(displayString: String, bgValue: Float) {
-        // Future BLE Peripheral Implementation
-        print("BLE push not implemented yet.")
     }
 }
 
@@ -152,8 +146,8 @@ extension GarminManager: IQAppMessageDelegate {
         print("Received message from Garmin data field: \(String(describing: message))")
         
         // The data field sent a 'ready' message — push the latest BG immediately
-        if let provider = displayStringProvider, let data = provider() {
-            pushToGarmin(displayString: data.display, bgValue: data.bgValue)
+        if let provider = garminDataProvider, let data = provider() {
+            pushToGarmin(bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
             print("Pushed latest BG to Garmin on data field request")
         } else {
             print("No BG data available to push to Garmin on request")

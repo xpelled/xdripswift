@@ -1130,8 +1130,8 @@ final class RootViewController: UIViewController, ObservableObject {
             fatalError("in setupApplicationData, failed to initialize bgReadings")
         }
         
-        // Wire up Garmin display string provider so it can push latest BG on demand
-        GarminManager.shared.displayStringProvider = { [weak self] in
+        // Wire up Garmin data provider so it can push latest BG on demand
+        GarminManager.shared.garminDataProvider = { [weak self] in
             return self?.buildGarminData()
         }
         
@@ -1504,15 +1504,15 @@ final class RootViewController: UIViewController, ObservableObject {
                 
                 // Push latest BG to Garmin device via Connect IQ
                 if let garminData = buildGarminData() {
-                    GarminManager.shared.pushToGarmin(displayString: garminData.display, bgValue: garminData.bgValue)
+                    GarminManager.shared.pushToGarmin(bgStr: garminData.bgStr, trendStr: garminData.trendStr, deltaStr: garminData.deltaStr, timestamp: garminData.timestamp, bgValue: garminData.bgValue)
                 }
             }
         }
     }
     
     /// Builds the data payload for the Garmin data field
-    /// Returns a display string (e.g. "2m 142 ↗ +3") and a numeric BG value for FIT recording
-    private func buildGarminData() -> (display: String, bgValue: Float)? {
+    /// Returns individual components so the watch can compute minutes-ago live
+    private func buildGarminData() -> (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float)? {
         guard let bgReadingsAccessor = bgReadingsAccessor else { return nil }
         
         let mgDl = UserDefaults.standard.bloodGlucoseUnitIsMgDl
@@ -1520,10 +1520,6 @@ final class RootViewController: UIViewController, ObservableObject {
         guard let lastReading = readings.first, lastReading.calculatedValue > 0.0 else { return nil }
         
         let lastButOneReading = readings.count > 1 ? readings[1] : nil
-        
-        // Minutes ago
-        let minutesAgo = -Int(lastReading.timeStamp.timeIntervalSinceNow) / 60
-        let minutesAgoStr = "\(minutesAgo)m"
         
         // BG value (same as app display)
         let bgStr = lastReading.unitizedString(unitIsMgDl: mgDl)
@@ -1537,8 +1533,10 @@ final class RootViewController: UIViewController, ObservableObject {
         // Delta (same as app display — no fractionals for mg/dL, 1 decimal for mmol/L)
         let deltaStr = lastReading.unitizedDeltaString(previousBgReading: lastButOneReading, showUnit: false, highGranularity: true, mgDl: mgDl)
         
-        let displayString = "\(minutesAgoStr) \(bgStr) \(trendStr) \(deltaStr)"
-        return (display: displayString, bgValue: bgNumeric)
+        // Reading timestamp as Unix epoch seconds
+        let timestamp = Int(lastReading.timeStamp.timeIntervalSince1970)
+        
+        return (bgStr: bgStr, trendStr: trendStr, deltaStr: deltaStr, timestamp: timestamp, bgValue: bgNumeric)
     }
     
     /// closes the SnoozeViewController if it is being presented now
@@ -3924,7 +3922,7 @@ extension RootViewController: FollowerDelegate {
                 
                 // Push latest BG to Garmin device via Connect IQ
                 if let garminData = buildGarminData() {
-                    GarminManager.shared.pushToGarmin(displayString: garminData.display, bgValue: garminData.bgValue)
+                    GarminManager.shared.pushToGarmin(bgStr: garminData.bgStr, trendStr: garminData.trendStr, deltaStr: garminData.deltaStr, timestamp: garminData.timestamp, bgValue: garminData.bgValue)
                 }
             }
         }
