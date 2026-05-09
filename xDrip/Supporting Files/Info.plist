@@ -25,9 +25,14 @@
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.garmin.connectiq</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>xdripswift</string>
+				<string>xdripzwift</string>
+				<string>xdrip-garmin</string>
 			</array>
 		</dict>
 	</array>
@@ -52,6 +57,10 @@
 	<false/>
 	<key>IgnoreFollowerTypes</key>
 	<string>$(IGNORE_FOLLOWER_TYPES)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>gcm-ciq</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

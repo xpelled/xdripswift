@@ -53,6 +53,9 @@ extension XDripWatchComplication.EntryView {
                     }
                 }
             } else {
+                let fontSize: CGFloat = entry.widgetState.isSmallScreen() ? 10 : 14
+                let textFont = Font.system(size: fontSize)
+                
                 VStack(alignment: .center, spacing: 2) {
                     HStack(alignment: .center, spacing: 4) {
                         Image(systemName: "exclamationmark.triangle")

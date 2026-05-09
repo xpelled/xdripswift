@@ -1,6 +1,9 @@
 import UIKit
 import CoreData
 import OSLog
+#if canImport(ConnectIQ)
+import ConnectIQ
+#endif
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -23,6 +26,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         trace("****************************************", log: log, category: ConstantsLog.categoryAppDelegate, type: .info)
         trace("*** in didFinishLaunchingWithOptions ***", log: log, category: ConstantsLog.categoryAppDelegate, type: .info)
         trace("****************************************", log: log, category: ConstantsLog.categoryAppDelegate, type: .info)
+        
+        // Initialize Garmin Connect IQ SDK
+        #if canImport(ConnectIQ)
+        ConnectIQ.sharedInstance()?.initialize(withUrlScheme: "xdrip-garmin", uiOverrideDelegate: nil)
+        #endif
         return true
     }
 
@@ -80,6 +88,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+        if GarminManager.shared.handleOpenURL(url) {
+            return true
+        }
+        
         // Just acknowledge the URL so the system doesn't crash
         return true
     }

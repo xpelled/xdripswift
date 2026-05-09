@@ -80,6 +80,9 @@ final class SettingsViewController: UIViewController {
         /// developer settings
         case developer
         
+        /// garmin settings
+        case garmin
+        
         func viewModel(coreDataManager: CoreDataManager?) -> SettingsViewModelProtocol {
             switch self {
                 
@@ -107,6 +110,8 @@ final class SettingsViewController: UIViewController {
                 return SettingsViewM5StackSettingsViewModel()
             case .developer:
                 return SettingsViewDevelopmentSettingsViewModel()
+            case .garmin:
+                return SettingsViewGarminSettingsViewModel()
             case .appleWatch:
                 return SettingsViewAppleWatchSettingsViewModel()
             case .calendarEvents:

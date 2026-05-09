@@ -37,4 +37,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
         completionHandler(true)
     }
+    
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        if let url = URLContexts.first?.url {
+            _ = GarminManager.shared.handleOpenURL(url)
+        }
+    }
 }

@@ -3,10 +3,12 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1BE12E772FABC7860022D401 /* ConnectIQ in Frameworks */ = {isa = PBXBuildFile; productRef = 1BE12E762FABC7860022D401 /* ConnectIQ */; };
+		1BE12E792FABE04D0022D401 /* SettingsViewGarminSettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE12E782FABE04D0022D401 /* SettingsViewGarminSettingsViewModel.swift */; };
 		47037B8E2C072346000BD6BD /* ConstantsAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88EC279260120C000DF0EAF /* ConstantsAlerts.swift */; };
 		47037B8F2C072973000BD6BD /* ConstantsAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88EC279260120C000DF0EAF /* ConstantsAlerts.swift */; };
 		47037B902C072974000BD6BD /* ConstantsAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88EC279260120C000DF0EAF /* ConstantsAlerts.swift */; };
@@ -813,6 +815,7 @@
 		198D44D7260A3A3400A2B4A2 /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/Snooze.strings; sourceTree = "<group>"; };
 		198D44D8260A3A3400A2B4A2 /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/LibreNFC.strings; sourceTree = "<group>"; };
 		198D44E7260A822000A2B4A2 /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/Main.strings; sourceTree = "<group>"; };
+		1BE12E782FABE04D0022D401 /* SettingsViewGarminSettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewGarminSettingsViewModel.swift; sourceTree = "<group>"; };
 		2867F5C825BC209400AA1E98 /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		2867F5C925BC209500AA1E98 /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/Main.strings; sourceTree = "<group>"; };
 		2867F5CB25BC209500AA1E98 /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/Alerts.strings; sourceTree = "<group>"; };
@@ -1789,6 +1792,10 @@
 		F8FDFEAC260DE1B90047597D /* ConstantsUI.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConstantsUI.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		1BE12E722FABC3F80022D401 /* Garmin */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Garmin; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		4716A4EA2B406C3D00419052 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -1833,6 +1840,7 @@
 				4779BCEE2974306300515714 /* ActionClosurable in Frameworks */,
 				F821CF9722AE589E005C1E43 /* HealthKit.framework in Frameworks */,
 				47DE41AA2B860DF00041DA19 /* WatchConnectivity.framework in Frameworks */,
+				1BE12E772FABC7860022D401 /* ConnectIQ in Frameworks */,
 				4779BCF42974308F00515714 /* PieCharts in Frameworks */,
 				4779BCF12974307700515714 /* CryptoSwift in Frameworks */,
 			);
@@ -2471,6 +2479,7 @@
 		F85DC2F621D25E3A00B9F74A /* Managers */ = {
 			isa = PBXGroup;
 			children = (
+				1BE12E722FABC3F80022D401 /* Garmin */,
 				F821CF48229BF43A005C1E43 /* Alerts */,
 				F821CF54229BF43A005C1E43 /* Application */,
 				F8297F42238DC4AC00D74D66 /* BluetoothPeripheral */,
@@ -2896,6 +2905,7 @@
 		F8B3A837227F090D004BA588 /* SettingsViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				1BE12E782FABE04D0022D401 /* SettingsViewGarminSettingsViewModel.swift */,
 				F8B3A838227F090D004BA588 /* SettingsViewAlertSettingsViewModel.swift */,
 				4767BDD52BD51E36009BC2EC /* SettingsViewAppleWatchSettingsViewModel.swift */,
 				47DB06C52A6FC72000267BE3 /* SettingsViewCalendarEventsSettingsViewModel.swift */,
@@ -3551,6 +3561,7 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+				1BE12E722FABC3F80022D401 /* Garmin */,
 		4716A4EC2B406C3D00419052 /* xDrip Widget Extension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4716A5012B406C3F00419052 /* Build configuration list for PBXNativeTarget "xDrip Widget Extension" */;
@@ -3639,12 +3650,16 @@
 				47DE41B12B864EE50041DA19 /* PBXTargetDependency */,
 				47CD641F2BE9506C002BDA68 /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				1BE12E722FABC3F80022D401 /* Garmin */,
+			);
 			name = xdrip;
 			packageProductDependencies = (
 				4779BCED2974306300515714 /* ActionClosurable */,
 				4779BCF02974307700515714 /* CryptoSwift */,
 				4779BCF32974308F00515714 /* PieCharts */,
 				470824D1297484B500C52317 /* SwiftCharts */,
+				1BE12E762FABC7860022D401 /* ConnectIQ */,
 			);
 			productName = xdrip;
 			productReference = F8AC425A21ADEBD60078C348 /* xdrip.app */;
@@ -3659,7 +3674,7 @@
 				BuildIndependentTargetsInParallel = YES;
 				DefaultBuildSystemTypeForWorkspace = Latest;
 				LastSwiftUpdateCheck = 1530;
-				LastUpgradeCheck = 2610;
+				LastUpgradeCheck = 2640;
 				ORGANIZATIONNAME = "Johan Degraeve";
 				TargetAttributes = {
 					4716A4EC2B406C3D00419052 = {
@@ -3719,6 +3734,7 @@
 				4779BCEC2974306300515714 /* XCRemoteSwiftPackageReference "ActionClosurable" */,
 				4779BCEF2974307700515714 /* XCRemoteSwiftPackageReference "CryptoSwift" */,
 				4779BCF22974308F00515714 /* XCRemoteSwiftPackageReference "PieCharts" */,
+				1BE12E752FABC7860022D401 /* XCRemoteSwiftPackageReference "connectiq-companion-app-sdk-ios" */,
 			);
 			productRefGroup = F8AC425B21ADEBD60078C348 /* Products */;
 			projectDirPath = "";
@@ -4116,6 +4132,7 @@
 				F897E24B23FC86CF0075E0E8 /* CGMG5TransmitterDelegate.swift in Sources */,
 				F8F9723323A5915900C3F17D /* M5StackBluetoothTransmitterDelegate.swift in Sources */,
 				F8B3A81B227DEC92004BA588 /* SensorsAccessor.swift in Sources */,
+				1BE12E792FABE04D0022D401 /* SettingsViewGarminSettingsViewModel.swift in Sources */,
 				F8F9721E23A5915900C3F17D /* LibreSensorState.swift in Sources */,
 				F8B3A85D22821BB6004BA588 /* Int.swift in Sources */,
 				F808D2CE2403292C0084B5DB /* Bubble+CoreDataProperties.swift in Sources */,
@@ -5115,7 +5132,6 @@
 				CODE_SIGN_IDENTITY = "$(XDRIP_CODE_SIGN_IDENTITY_DEBUG)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = "$(XDRIP_DEVELOPMENT_TEAM)";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "xDrip Widget/Info.plist";
@@ -5151,7 +5167,6 @@
 				CODE_SIGN_IDENTITY = "$(XDRIP_CODE_SIGN_IDENTITY_RELEASE)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = "$(XDRIP_DEVELOPMENT_TEAM)";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "xDrip Widget/Info.plist";
@@ -5185,7 +5200,6 @@
 				CODE_SIGN_ENTITLEMENTS = "xDrip Watch Complication Extension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = "$(XDRIP_DEVELOPMENT_TEAM)";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "xDrip Watch Complication/Info.plist";
@@ -5222,7 +5236,6 @@
 				CODE_SIGN_ENTITLEMENTS = "xDrip Watch Complication Extension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = "$(XDRIP_DEVELOPMENT_TEAM)";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "xDrip Watch Complication/Info.plist";
@@ -5259,7 +5272,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DEVELOPMENT_ASSET_PATHS = "\"xDrip Watch App/Preview Content\"";
-				DEVELOPMENT_TEAM = "$(XDRIP_DEVELOPMENT_TEAM)";
 				ENABLE_PREVIEWS = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -5299,7 +5311,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DEVELOPMENT_ASSET_PATHS = "\"xDrip Watch App/Preview Content\"";
-				DEVELOPMENT_TEAM = "$(XDRIP_DEVELOPMENT_TEAM)";
 				ENABLE_PREVIEWS = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -5337,7 +5348,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = "$(XDRIP_DEVELOPMENT_TEAM)";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "xDrip Notification Context Extension/Info.plist";
@@ -5372,7 +5382,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = "$(XDRIP_DEVELOPMENT_TEAM)";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "xDrip Notification Context Extension/Info.plist";
@@ -5433,6 +5442,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = A9355ZUB45;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -5502,6 +5512,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = A9355ZUB45;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -5537,7 +5548,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = "$(XDRIP_CODE_SIGN_STYLE)";
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = "$(XDRIP_DEVELOPMENT_TEAM)";
 				INFOPLIST_FILE = "xdrip/Supporting Files/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5545,6 +5555,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = "$(XDRIP_MARKETING_VERSION)";
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(MAIN_APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -5566,7 +5577,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = "$(XDRIP_CODE_SIGN_STYLE)";
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = "$(XDRIP_DEVELOPMENT_TEAM)";
 				INFOPLIST_FILE = "xdrip/Supporting Files/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5574,6 +5584,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = "$(XDRIP_MARKETING_VERSION)";
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(MAIN_APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -5643,6 +5654,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		1BE12E752FABC7860022D401 /* XCRemoteSwiftPackageReference "connectiq-companion-app-sdk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/garmin/connectiq-companion-app-sdk-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.8.0;
+			};
+		};
 		4779BCE92974303400515714 /* XCRemoteSwiftPackageReference "SwiftCharts" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ivanschuetz/SwiftCharts";
@@ -5678,6 +5697,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		1BE12E762FABC7860022D401 /* ConnectIQ */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1BE12E752FABC7860022D401 /* XCRemoteSwiftPackageReference "connectiq-companion-app-sdk-ios" */;
+			productName = ConnectIQ;
+		};
 		470824D1297484B500C52317 /* SwiftCharts */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4779BCE92974303400515714 /* XCRemoteSwiftPackageReference "SwiftCharts" */;

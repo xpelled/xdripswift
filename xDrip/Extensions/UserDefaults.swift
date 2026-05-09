@@ -272,6 +272,9 @@ extension UserDefaults {
         /// timestamp of last bgreading that was stored in healthkit
         case timeStampLatestHealthKitStoreBgReading = "timeStampLatestHealthKitStoreBgReading"
         
+        // Garmin
+        case garminConnectionType = "garminConnectionType"
+        
         // Speak readings
         
         /// speak readings
@@ -2219,6 +2222,15 @@ extension UserDefaults {
         }
     }
     
+    // Garmin
+    @objc dynamic var garminConnectionType: Int {
+        get {
+            return integer(forKey: Key.garminConnectionType.rawValue)
+        }
+        set {
+            set(newValue, forKey: Key.garminConnectionType.rawValue)
+        }
+    }
     /// timestamp of last bgreading that was stored in healthkit
     var timeStampLatestHealthKitStoreBgReading:Date? {
         get {
