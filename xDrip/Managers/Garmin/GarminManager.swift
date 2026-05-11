@@ -138,6 +138,11 @@ extension GarminManager: IQDeviceEventDelegate {
     
     public func deviceCharacteristicsDiscovered(_ device: IQDevice!) {
         print("Garmin device characteristics discovered, ready to communicate!")
+        // Device just (re)connected — push latest BG immediately
+        if let provider = garminDataProvider, let data = provider() {
+            pushToGarmin(bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
+            print("Pushed latest BG to Garmin on reconnect")
+        }
     }
 }
 
