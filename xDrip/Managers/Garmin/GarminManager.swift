@@ -4,102 +4,142 @@ import CoreData
 import ConnectIQ
 #endif
 
-public enum GarminConnectionType: Int {
-    case connectIQ = 0
-    case ble = 1
-}
-
 public class GarminManager: NSObject {
     public static let shared = GarminManager()
     
-    /// The unique UUID of your Garmin Data Field (from manifest.xml)
     private let garminAppId = UUID(uuidString: "A3421FEE-D289-106A-538C-B9547AB3F101")
     
-    /// Closure that provides Garmin data components on demand (injected by RootViewController)
     public var garminDataProvider: (() -> (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float)?)?
+    public var onStatusChange: (() -> Void)?
+    
+    private var lastPushTime: Date = .distantPast
+    private var deviceHandshakes: [String: Date] = [:]
     
     private override init() {
         super.init()
+        loadHandshakes()
         #if canImport(ConnectIQ)
-        if let device = getSavedGarminDevice() as? IQDevice {
+        let devices = getSavedGarminDevices()
+        for device in devices {
             ConnectIQ.sharedInstance()?.register(forDeviceEvents: device, delegate: self)
             registerForAppMessages(device: device)
-            print("GarminManager initialized: Registered saved device \(device.friendlyName ?? "")")
         }
         #endif
+    }
+    
+    private func log(_ msg: String) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        print("\(formatter.string(from: Date())) [Garmin] \(msg)")
     }
     
     public func showDeviceSelection() {
         #if canImport(ConnectIQ)
         ConnectIQ.sharedInstance()?.showDeviceSelection()
-        #else
-        print("ConnectIQ framework not imported.")
         #endif
+    }
+    
+    public func clearAllDevices() {
+        #if canImport(ConnectIQ)
+        for device in getSavedGarminDevices() {
+            ConnectIQ.sharedInstance()?.unregister(forDeviceEvents: device, delegate: self)
+        }
+        #endif
+        UserDefaults.standard.removeObject(forKey: "GarminManager_SavedDevices")
+        UserDefaults.standard.removeObject(forKey: "GarminManager_Handshakes")
+        deviceHandshakes.removeAll()
+        log("Cleared all Garmin devices.")
+        DispatchQueue.main.async { [weak self] in self?.onStatusChange?() }
     }
     
     public func handleOpenURL(_ url: URL) -> Bool {
         #if canImport(ConnectIQ)
-        if url.scheme == "xdrip-garmin" {
-            if let devices = ConnectIQ.sharedInstance()?.parseDeviceSelectionResponse(from: url) as? [IQDevice], let firstDevice = devices.first {
-                saveGarminDevice(firstDevice)
-                ConnectIQ.sharedInstance()?.register(forDeviceEvents: firstDevice, delegate: self)
-                registerForAppMessages(device: firstDevice)
-                print("Garmin device paired successfully!")
-                return true
-            }
+        guard let devices = ConnectIQ.sharedInstance()?.parseDeviceSelectionResponse(from: url) as? [IQDevice] else {
+            return false
         }
+        
+        var savedDevices = getSavedGarminDevices()
+        var newlyAdded = false
+        
+        for device in devices {
+            if !savedDevices.contains(where: { $0.uuid.uuidString == device.uuid.uuidString }) {
+                savedDevices.append(device)
+                newlyAdded = true
+                log("Added device: \(device.friendlyName ?? "Unknown")")
+            }
+            
+            ConnectIQ.sharedInstance()?.register(forDeviceEvents: device, delegate: self)
+            registerForAppMessages(device: device)
+            
+            // Mark as active immediately on pairing
+            self.deviceHandshakes[device.uuid.uuidString] = Date()
+        }
+        
+        if newlyAdded {
+            saveGarminDevices(savedDevices)
+        }
+        saveHandshakes()
+        
+        DispatchQueue.main.async { [weak self] in self?.onStatusChange?() }
+        return true
         #endif
         return false
     }
-    
-    /// Push BG data components to the Garmin data field
-    public func pushToGarmin(bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
-        let connectionType = GarminConnectionType(rawValue: UserDefaults.standard.garminConnectionType) ?? .connectIQ
-        
-        switch connectionType {
-        case .connectIQ:
-            pushViaConnectIQ(bgStr: bgStr, trendStr: trendStr, deltaStr: deltaStr, timestamp: timestamp, bgValue: bgValue)
-        case .ble:
-            print("BLE push not implemented yet.")
-        }
-    }
-    
-    public func saveGarminDevice(_ device: IQDevice) {
+
+    public func pingDevice(_ device: IQDevice) {
         #if canImport(ConnectIQ)
-        do {
-            let data = try NSKeyedArchiver.archivedData(withRootObject: device, requiringSecureCoding: true)
-            UserDefaults.standard.set(data, forKey: "GarminManager_SavedDevice")
-        } catch {
-            print("Failed to save Garmin device: \(error)")
-        }
+        let app = IQApp(uuid: garminAppId!, store: nil, device: device)
+        log("Pinging \(device.friendlyName ?? "Garmin")...")
+        ConnectIQ.sharedInstance()?.sendMessage(["cmd": "ping"], to: app, progress: nil, completion: { [weak self] (result) in
+            if result != .success {
+                self?.log("Ping failed: \(result.rawValue)")
+            }
+        })
         #endif
     }
     
-    public func getSavedGarminDevice() -> Any? {
+    public func isDataFieldActive(for device: IQDevice) -> Bool {
+        guard let lastHandshake = deviceHandshakes[device.uuid.uuidString] else { return false }
+        // 5 minutes is enough since watch pings every 3 minutes
+        return Date().timeIntervalSince(lastHandshake) < 300.0
+    }
+
+    public var connectedDevices: [IQDevice] {
+        return getSavedGarminDevices()
+    }
+    
+    public func deviceStatusString(for device: IQDevice) -> String {
         #if canImport(ConnectIQ)
-        guard let data = UserDefaults.standard.data(forKey: "GarminManager_SavedDevice") else { return nil }
-        do {
-            return try NSKeyedUnarchiver.unarchivedObject(ofClass: IQDevice.self, from: data)
-        } catch {
-            print("Failed to load Garmin device: \(error)")
-            return nil
+        let status = ConnectIQ.sharedInstance()?.getDeviceStatus(device) ?? .notConnected
+        var statusStr = (status == .connected) ? "Connected" : "Disconnected"
+        if status == .connected {
+            statusStr += isDataFieldActive(for: device) ? " (Active)" : " (Standby)"
         }
+        return statusStr
         #else
-        return nil
+        return "N/A"
+        #endif
+    }
+    
+    public func pushToGarmin(bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
+        guard Date().timeIntervalSince(lastPushTime) > 5.0 else { return }
+        
+        #if canImport(ConnectIQ)
+        let devices = getSavedGarminDevices()
+        var pushed = false
+        for device in devices {
+            if isDataFieldActive(for: device) {
+                pushViaConnectIQ(device: device, bgStr: bgStr, trendStr: trendStr, deltaStr: deltaStr, timestamp: timestamp, bgValue: bgValue)
+                pushed = true
+            }
+        }
+        if pushed { lastPushTime = Date() }
         #endif
     }
 
-    private func pushViaConnectIQ(bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
+    private func pushViaConnectIQ(device: IQDevice, bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
         #if canImport(ConnectIQ)
-        guard let appId = garminAppId else { return }
-        
-        guard let device = getSavedGarminDevice() as? IQDevice else {
-            print("No Garmin device saved. Please pair using ConnectIQ.sharedInstance()?.showDeviceSelection()")
-            return
-        }
-        
-        let app = IQApp(uuid: appId, store: nil, device: device)
-        
+        let app = IQApp(uuid: garminAppId!, store: nil, device: device)
         let message: [AnyHashable: Any] = [
             "bgStr": bgStr,
             "trend": trendStr,
@@ -108,65 +148,83 @@ public class GarminManager: NSObject {
             "bg": bgValue
         ]
         
-        // Register for events to ensure the SDK tries to connect
-        ConnectIQ.sharedInstance()?.register(forDeviceEvents: device, delegate: self)
-        
-        if let status = ConnectIQ.sharedInstance()?.getDeviceStatus(device) {
-            print("Garmin device status before send: \(status.rawValue)")
-        }
-        
-        ConnectIQ.sharedInstance()?.sendMessage(message, to: app, progress: { (sent, total) in
-            // Handle progress
-        }, completion: { (result) in
+        ConnectIQ.sharedInstance()?.sendMessage(message, to: app, progress: nil, completion: { [weak self] (result) in
             if result == .success {
-                print("Successfully sent to Garmin: \(bgStr) \(trendStr) \(deltaStr)")
+                self?.log("Pushed to \(device.friendlyName ?? "Garmin") (\(bgStr))")
             } else {
-                print("Failed to send BG to Garmin. Result code: \(result.rawValue)")
+                self?.log("Failed push to \(device.friendlyName ?? "Garmin"): \(result.rawValue)")
             }
         })
-        #else
-        print("ConnectIQ framework not imported. Cannot push via Connect IQ.")
         #endif
+    }
+    
+    private func saveGarminDevices(_ devices: [IQDevice]) {
+        #if canImport(ConnectIQ)
+        do {
+            let data = try NSKeyedArchiver.archivedData(withRootObject: devices, requiringSecureCoding: true)
+            UserDefaults.standard.set(data, forKey: "GarminManager_SavedDevices")
+        } catch { log("Error saving devices: \(error)") }
+        #endif
+    }
+    
+    private func getSavedGarminDevices() -> [IQDevice] {
+        #if canImport(ConnectIQ)
+        guard let data = UserDefaults.standard.data(forKey: "GarminManager_SavedDevices") else { return [] }
+        do {
+            return try NSKeyedUnarchiver.unarchivedObject(ofClasses: [NSArray.self, IQDevice.self], from: data) as? [IQDevice] ?? []
+        } catch { return [] }
+        #else
+        return []
+        #endif
+    }
+    
+    private func saveHandshakes() {
+        UserDefaults.standard.set(deviceHandshakes, forKey: "GarminManager_Handshakes")
+    }
+    
+    private func loadHandshakes() {
+        if let saved = UserDefaults.standard.dictionary(forKey: "GarminManager_Handshakes") as? [String: Date] {
+            // Only load handshakes that are less than 5 minutes old
+            self.deviceHandshakes = saved.filter { Date().timeIntervalSince($0.value) < 300.0 }
+        }
     }
 }
 
 #if canImport(ConnectIQ)
 extension GarminManager: IQDeviceEventDelegate {
     public func deviceStatusChanged(_ device: IQDevice!, status: IQDeviceStatus) {
-        print("Garmin device status changed: \(status.rawValue)")
-    }
-    
-    public func deviceCharacteristicsDiscovered(_ device: IQDevice!) {
-        print("Garmin device characteristics discovered, ready to communicate!")
-        // Device just (re)connected — push latest BG immediately
-        if let provider = garminDataProvider, let data = provider() {
-            pushToGarmin(bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
-            print("Pushed latest BG to Garmin on reconnect")
-        }
+        log("Device \(device.friendlyName ?? "") status: \(status.rawValue)")
+        DispatchQueue.main.async { [weak self] in self?.onStatusChange?() }
     }
 }
 
 extension GarminManager: IQAppMessageDelegate {
     public func receivedMessage(_ message: Any!, from app: IQApp!) {
-        print("Received message from Garmin data field: \(String(describing: message))")
+        guard let dict = message as? [String: Any], let cmd = dict["cmd"] as? String else { return }
+        let deviceId = app.device.uuid.uuidString
         
-        // The data field sent a 'ready' message — push the latest BG immediately
-        if let provider = garminDataProvider, let data = provider() {
-            pushToGarmin(bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
-            print("Pushed latest BG to Garmin on data field request")
-        } else {
-            print("No BG data available to push to Garmin on request")
+        if cmd == "ready" {
+            log("Handshake from \(app.device.friendlyName ?? "device")")
+            self.deviceHandshakes[deviceId] = Date()
+            saveHandshakes()
+            
+            if let provider = garminDataProvider, let data = provider() {
+                pushViaConnectIQ(device: app.device, bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
+            }
+        } else if cmd == "stop" {
+            log("Stop signal from \(app.device.friendlyName ?? "device")")
+            self.deviceHandshakes.removeValue(forKey: deviceId)
+            saveHandshakes()
         }
+        
+        DispatchQueue.main.async { [weak self] in self?.onStatusChange?() }
     }
 }
 
 extension GarminManager {
-    /// Register to receive messages from the Glux data field app on the given device
     func registerForAppMessages(device: IQDevice) {
-        guard let appId = garminAppId else { return }
-        let app = IQApp(uuid: appId, store: nil, device: device)
+        let app = IQApp(uuid: garminAppId!, store: nil, device: device)
         ConnectIQ.sharedInstance()?.register(forAppMessages: app, delegate: self)
-        print("Registered for app messages from Garmin data field")
     }
 }
 #endif

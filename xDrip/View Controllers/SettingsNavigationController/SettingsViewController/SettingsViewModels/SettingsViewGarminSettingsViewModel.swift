@@ -3,7 +3,7 @@ import os
 
 fileprivate enum Setting: Int, CaseIterable {
     case pairDevice = 0
-    case connectionType = 1
+    case clearDevices = 1
 }
 
 class SettingsViewGarminSettingsViewModel: NSObject {
@@ -11,6 +11,17 @@ class SettingsViewGarminSettingsViewModel: NSObject {
     private var log = OSLog(subsystem: ConstantsLog.subSystem, category: ConstantsLog.categoryTraceSettingsViewModel)
     private var messageHandler: ((String, String) -> Void)?
     private var rowReloadClosure: ((Int) -> Void)?
+    
+    override init() {
+        super.init()
+        GarminManager.shared.onStatusChange = { [weak self] in
+            DispatchQueue.main.async {
+                if let tableView = self?.uIViewController?.view.subviews.first(where: { $0 is UITableView }) as? UITableView {
+                    tableView.reloadData()
+                }
+            }
+        }
+    }
 }
 
 extension SettingsViewGarminSettingsViewModel: SettingsViewModelProtocol {
@@ -31,74 +42,88 @@ extension SettingsViewGarminSettingsViewModel: SettingsViewModelProtocol {
     }
     
     func sectionFooter() -> String? {
-        return "Select how xDrip communicates with your Garmin Glux Data Field. By default, data is pushed via the Garmin Connect app. You must pair a device before data can be sent."
+        return "xDrip pushes data to your Garmin Glux Data Field. Multiple devices can receive data simultaneously if their data fields are active."
     }
     
     func settingsRowText(index: Int) -> String {
-        guard let setting = Setting(rawValue: index) else { fatalError("Unexpected Section") }
-        switch setting {
-        case .pairDevice:
-            return "Pair Garmin Device"
-        case .connectionType:
-            return "Use BLE Peripheral"
+        let devices = GarminManager.shared.connectedDevices
+        let actionCount = Setting.allCases.count
+        
+        if index < actionCount {
+            guard let setting = Setting(rawValue: index) else { return "" }
+            switch setting {
+            case .pairDevice: return "Pair Garmin Device"
+            case .clearDevices: return "Clear All Paired Devices"
+            }
+        } else {
+            let deviceIndex = index - actionCount
+            if deviceIndex < devices.count {
+                return devices[deviceIndex].friendlyName ?? "Garmin Device"
+            }
         }
+        return ""
     }
     
     func accessoryType(index: Int) -> UITableViewCell.AccessoryType {
-        guard let setting = Setting(rawValue: index) else { fatalError("Unexpected Section") }
-        switch setting {
-        case .pairDevice:
-            return .disclosureIndicator
-        case .connectionType:
-            return .none
-        }
+        return (index == 0) ? .disclosureIndicator : .none
     }
     
     func detailedText(index: Int) -> String? {
-        guard let setting = Setting(rawValue: index) else { fatalError("Unexpected Section") }
-        switch setting {
-        case .pairDevice:
-            return "Launch Garmin Connect to select your watch."
-        case .connectionType:
-            return "Enable to broadcast directly via BLE instead of using the Garmin Connect app."
+        let actionCount = Setting.allCases.count
+        if index == 0 {
+            return "Launch Garmin Connect to add a device."
+        } else if index == 1 {
+            return "Remove all watches and bike computers from xDrip."
+        } else {
+            let devices = GarminManager.shared.connectedDevices
+            let deviceIndex = index - actionCount
+            if deviceIndex < devices.count {
+                return GarminManager.shared.deviceStatusString(for: devices[deviceIndex])
+            }
         }
+        return nil
     }
     
     func uiView(index: Int) -> UIView? {
-        guard let setting = Setting(rawValue: index) else { fatalError("Unexpected Section") }
-        switch setting {
-        case .pairDevice:
-            return nil
-        case .connectionType:
-            let type = GarminConnectionType(rawValue: UserDefaults.standard.garminConnectionType) ?? .connectIQ
-            let switchView = UISwitch(isOn: type == .ble) { [weak self] isOn in
-                if isOn {
-                    self?.messageHandler?("BLE Peripheral", "Direct BLE broadcasting to Garmin is not available at the moment. Falling back to Garmin Connect app.")
-                    UserDefaults.standard.garminConnectionType = GarminConnectionType.connectIQ.rawValue
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        self?.rowReloadClosure?(index)
-                    }
-                } else {
-                    UserDefaults.standard.garminConnectionType = GarminConnectionType.connectIQ.rawValue
-                }
-            }
-            return switchView
-        }
+        return nil
     }
     
     func numberOfRows() -> Int {
-        return Setting.allCases.count
+        return Setting.allCases.count + GarminManager.shared.connectedDevices.count
     }
     
     func onRowSelect(index: Int) -> SettingsSelectedRowAction {
-        guard let setting = Setting(rawValue: index) else { fatalError("Unexpected Section") }
-        switch setting {
-        case .pairDevice:
-            GarminManager.shared.showDeviceSelection()
-            return .nothing
-        case .connectionType:
-            return .nothing
+        let actionCount = Setting.allCases.count
+        
+        if index < actionCount {
+            guard let setting = Setting(rawValue: index) else { return .nothing }
+            switch setting {
+            case .pairDevice:
+                GarminManager.shared.showDeviceSelection()
+            case .clearDevices:
+                let alert = UIAlertController(title: "Clear All Devices?", message: "This will remove all paired Garmin devices from xDrip.", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+                alert.addAction(UIAlertAction(title: "Clear", style: .destructive, handler: { _ in
+                    GarminManager.shared.clearAllDevices()
+                }))
+                uIViewController?.present(alert, animated: true)
+            }
+        } else {
+            let devices = GarminManager.shared.connectedDevices
+            let deviceIndex = index - actionCount
+            if deviceIndex < devices.count {
+                let device = devices[deviceIndex]
+                GarminManager.shared.pingDevice(device)
+                
+                // Show a brief feedback alert
+                let alert = UIAlertController(title: "Pinging...", message: "Sending ping to \(device.friendlyName ?? "Garmin")...", preferredStyle: .alert)
+                uIViewController?.present(alert, animated: true)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    alert.dismiss(animated: true)
+                }
+            }
         }
+        return .nothing
     }
     
     func isEnabled(index: Int) -> Bool {
