@@ -157,16 +157,14 @@ public class GarminManager: NSObject {
     
     public enum PriorityMode: Int {
         case none = 0
-        case bg = 1
-        case bgTime = 2
-        case bgDelta = 3
+        case l1 = 1
+        case l2 = 2
         
         var description: String {
             switch self {
-            case .none: return "Equal (Off)"
-            case .bg: return "BG"
-            case .bgTime: return "BG + Time"
-            case .bgDelta: return "BG + Delta"
+            case .none: return "Equal Font Sizes"
+            case .l1: return "Line 1 Priority"
+            case .l2: return "Line 2 Priority"
             }
         }
     }
@@ -231,6 +229,22 @@ public class GarminManager: NSObject {
         updateSetting("priorityMode", value: value.rawValue, for: deviceId)
     }
     
+    public func getLine1Layout(for deviceId: String) -> String {
+        return deviceSettings[deviceId]?["l1"] as? String ?? "BA"
+    }
+    
+    public func setLine1Layout(_ value: String, for deviceId: String) {
+        updateSetting("l1", value: value, for: deviceId)
+    }
+    
+    public func getLine2Layout(for deviceId: String) -> String {
+        return deviceSettings[deviceId]?["l2"] as? String ?? "TD"
+    }
+    
+    public func setLine2Layout(_ value: String, for deviceId: String) {
+        updateSetting("l2", value: value, for: deviceId)
+    }
+    
     private func updateSetting(_ key: String, value: Any, for deviceId: String) {
         let oldSettings = deviceSettings[deviceId] ?? [:]
         let oldValue = oldSettings[key]
@@ -288,7 +302,9 @@ public class GarminManager: NSObject {
             "recordToFit": self.getRecordToFit(for: deviceId),
             "timerMode": self.getTimerMode(for: deviceId).rawValue,
             "showDelta": self.getShowDelta(for: deviceId),
-            "priorityMode": self.getPriorityMode(for: deviceId).rawValue
+            "priorityMode": self.getPriorityMode(for: deviceId).rawValue,
+            "l1": self.getLine1Layout(for: deviceId),
+            "l2": self.getLine2Layout(for: deviceId)
         ]
         
         // Skip if identical to last message sent to this device
@@ -485,6 +501,8 @@ extension GarminManager: IQAppMessageDelegate {
             if let tMode = dict["timerMode"] as? Int { settings["timerMode"] = tMode }
             if let sDelta = dict["showDelta"] as? Bool { settings["showDelta"] = sDelta }
             if let pMode = dict["priorityMode"] as? Int { settings["priorityMode"] = pMode }
+            if let l1 = dict["l1"] as? String { settings["l1"] = l1 }
+            if let l2 = dict["l2"] as? String { settings["l2"] = l2 }
             deviceSettings[deviceId] = settings
             saveSettings()
             
