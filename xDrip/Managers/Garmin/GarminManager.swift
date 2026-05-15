@@ -135,8 +135,31 @@ public class GarminManager: NSObject {
         #endif
     }
     
+    // Settings for the Data Field
+    public var showArrow: Bool {
+        get { UserDefaults.standard.bool(forKey: "GarminManager_ShowArrow") == false ? true : UserDefaults.standard.bool(forKey: "GarminManager_ShowArrow") } // Default true
+        set { 
+            UserDefaults.standard.set(newValue, forKey: "GarminManager_ShowArrow")
+            pushCurrentData() 
+        }
+    }
+    
+    public var recordToFit: Bool {
+        get { UserDefaults.standard.object(forKey: "GarminManager_RecordToFit") as? Bool ?? true } // Default true
+        set { 
+            UserDefaults.standard.set(newValue, forKey: "GarminManager_RecordToFit")
+            pushCurrentData()
+        }
+    }
+    
+    private func pushCurrentData() {
+        if let provider = garminDataProvider, let data = provider() {
+            pushToGarmin(bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
+        }
+    }
+    
     public func pushToGarmin(bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
-        guard Date().timeIntervalSince(lastPushTime) > 5.0 else { return }
+        guard Date().timeIntervalSince(lastPushTime) > 5.0 || lastPushTime == .distantPast else { return }
         
         #if canImport(ConnectIQ)
         let devices = getSavedGarminDevices()
@@ -162,7 +185,9 @@ public class GarminManager: NSObject {
             "trend": trendStr,
             "delta": deltaStr,
             "ts": timestamp,
-            "bg": bgValue
+            "bg": bgValue,
+            "showArrow": showArrow,
+            "recordToFit": recordToFit
         ]
         
         ConnectIQ.sharedInstance()?.sendMessage(message, to: app, progress: nil, completion: { [weak self] (result) in

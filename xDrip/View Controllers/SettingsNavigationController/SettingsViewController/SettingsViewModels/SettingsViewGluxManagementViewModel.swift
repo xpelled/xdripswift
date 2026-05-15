@@ -3,19 +3,25 @@ import UIKit
 fileprivate enum Setting: Int, CaseIterable {
     case pairDevice = 0
     case clearDevices = 1
+    case showArrow = 2
+    case recordToFit = 3
 }
 
 class SettingsViewGluxManagementViewModel: NSObject, SettingsViewModelProtocol {
-    func storeRowReloadClosure(rowReloadClosure: @escaping ((Int) -> Void)) {}
+    private var rowReloadClosure: ((Int) -> Void)?
+    
+    func storeRowReloadClosure(rowReloadClosure: @escaping ((Int) -> Void)) {
+        self.rowReloadClosure = rowReloadClosure
+    }
     func storeUIViewController(uIViewController: UIViewController) {}
     func storeMessageHandler(messageHandler: @escaping ((String, String) -> Void)) {}
     
     func sectionTitle() -> String? {
-        return "Management"
+        return "Management & Preferences"
     }
     
     func sectionFooter() -> String? {
-        return "Use 'Pair' to find new devices via Garmin Connect. 'Clear' will remove all watches from xDrip."
+        return "Use 'Pair' to find new devices via Garmin Connect. 'Display Arrow' toggles the trend arrow on the watch. 'Record to FIT' saves glucose data into your Garmin activity files."
     }
     
     func settingsRowText(index: Int) -> String {
@@ -23,6 +29,8 @@ class SettingsViewGluxManagementViewModel: NSObject, SettingsViewModelProtocol {
         switch setting {
         case .pairDevice: return "Pair New Garmin Device"
         case .clearDevices: return "Clear All Paired Devices"
+        case .showArrow: return "Display Trend Arrow"
+        case .recordToFit: return "Record BG data to FIT"
         }
     }
     
@@ -34,7 +42,33 @@ class SettingsViewGluxManagementViewModel: NSObject, SettingsViewModelProtocol {
         return nil
     }
     
-    func uiView(index: Int) -> UIView? { return nil }
+    func uiView(index: Int) -> UIView? {
+        guard let setting = Setting(rawValue: index) else { return nil }
+        
+        if setting == .showArrow || setting == .recordToFit {
+            let toggle = UISwitch()
+            toggle.onTintColor = ConstantsUI.switchOnTintColor
+            
+            if setting == .showArrow {
+                toggle.isOn = GarminManager.shared.showArrow
+                toggle.addTarget(self, action: #selector(onShowArrowToggle(_:)), for: .valueChanged)
+            } else if setting == .recordToFit {
+                toggle.isOn = GarminManager.shared.recordToFit
+                toggle.addTarget(self, action: #selector(onRecordToFitToggle(_:)), for: .valueChanged)
+            }
+            return toggle
+        }
+        
+        return nil
+    }
+    
+    @objc private func onShowArrowToggle(_ sender: UISwitch) {
+        GarminManager.shared.showArrow = sender.isOn
+    }
+    
+    @objc private func onRecordToFitToggle(_ sender: UISwitch) {
+        GarminManager.shared.recordToFit = sender.isOn
+    }
     
     func numberOfRows() -> Int {
         return Setting.allCases.count
@@ -50,6 +84,8 @@ class SettingsViewGluxManagementViewModel: NSObject, SettingsViewModelProtocol {
             return .askConfirmation(title: "Clear All Devices?", message: "This will remove all paired Garmin devices from xDrip.", actionHandler: {
                 GarminManager.shared.clearAllDevices()
             }, cancelHandler: nil)
+        case .showArrow, .recordToFit:
+            return .nothing // Handled by UISwitch
         }
     }
     
