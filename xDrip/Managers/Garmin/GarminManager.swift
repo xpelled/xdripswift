@@ -7,13 +7,22 @@ import ConnectIQ
 public class GarminManager: NSObject {
     public static let shared = GarminManager()
     
-    private let garminAppId = UUID(uuidString: "A3421FEE-D289-106A-538C-B9547AB3F101")
+    // Support for both Dev and Beta versions
+    private let devAppId = UUID(uuidString: "A3421FEE-D289-106A-538C-B9547AB3F101")
+    private let betaAppId = UUID(uuidString: "B37A01FE-ED28-9106-A538-CB9547AB3F01")
+    
+    private var validAppIds: [UUID] {
+        return [devAppId, betaAppId].compactMap { $0 }
+    }
     
     public var garminDataProvider: (() -> (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float)?)?
     public var onStatusChange: (() -> Void)?
     
     private var lastPushTime: Date = .distantPast
     private var deviceHandshakes: [String: Date] = [:]
+    
+    // Tracks which AppID a specific device is currently using
+    private var deviceActiveAppId: [String: UUID] = [:]
     
     private override init() {
         super.init()
@@ -48,6 +57,7 @@ public class GarminManager: NSObject {
         UserDefaults.standard.removeObject(forKey: "GarminManager_SavedDevices")
         UserDefaults.standard.removeObject(forKey: "GarminManager_Handshakes")
         deviceHandshakes.removeAll()
+        deviceActiveAppId.removeAll()
         log("Cleared all Garmin devices.")
         DispatchQueue.main.async { [weak self] in self?.onStatusChange?() }
     }
@@ -88,13 +98,15 @@ public class GarminManager: NSObject {
 
     public func pingDevice(_ device: IQDevice) {
         #if canImport(ConnectIQ)
-        let app = IQApp(uuid: garminAppId!, store: nil, device: device)
-        log("Pinging \(device.friendlyName ?? "Garmin")...")
-        ConnectIQ.sharedInstance()?.sendMessage(["cmd": "ping"], to: app, progress: nil, completion: { [weak self] (result) in
-            if result != .success {
-                self?.log("Ping failed: \(result.rawValue)")
-            }
-        })
+        // Ping all possible AppIDs since we don't know which one is installed
+        for appId in validAppIds {
+            let app = IQApp(uuid: appId, store: nil, device: device)
+            ConnectIQ.sharedInstance()?.sendMessage(["cmd": "ping"], to: app, progress: nil, completion: { [weak self] (result) in
+                if result == .success {
+                    self?.log("Ping sent to \(device.friendlyName ?? "Garmin") (\(appId.uuidString.prefix(4))...)")
+                }
+            })
+        }
         #endif
     }
     
@@ -139,7 +151,10 @@ public class GarminManager: NSObject {
 
     private func pushViaConnectIQ(device: IQDevice, bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
         #if canImport(ConnectIQ)
-        let app = IQApp(uuid: garminAppId!, store: nil, device: device)
+        // Use the specifically identified active AppID for this device, or fallback to Dev
+        let appId = deviceActiveAppId[device.uuid.uuidString] ?? devAppId!
+        let app = IQApp(uuid: appId, store: nil, device: device)
+        
         let message: [AnyHashable: Any] = [
             "bgStr": bgStr,
             "trend": trendStr,
@@ -184,7 +199,6 @@ public class GarminManager: NSObject {
     
     private func loadHandshakes() {
         if let saved = UserDefaults.standard.dictionary(forKey: "GarminManager_Handshakes") as? [String: Date] {
-            // Only load handshakes that are less than 5 minutes old
             self.deviceHandshakes = saved.filter { Date().timeIntervalSince($0.value) < 300.0 }
         }
     }
@@ -203,8 +217,11 @@ extension GarminManager: IQAppMessageDelegate {
         guard let dict = message as? [String: Any], let cmd = dict["cmd"] as? String else { return }
         let deviceId = app.device.uuid.uuidString
         
+        // Remember which version of the app is actually talking to us
+        self.deviceActiveAppId[deviceId] = app.uuid
+        
         if cmd == "ready" {
-            log("Handshake from \(app.device.friendlyName ?? "device")")
+            log("Handshake from \(app.device.friendlyName ?? "device") [\(app.uuid.uuidString.prefix(4))]")
             self.deviceHandshakes[deviceId] = Date()
             saveHandshakes()
             
@@ -214,6 +231,7 @@ extension GarminManager: IQAppMessageDelegate {
         } else if cmd == "stop" {
             log("Stop signal from \(app.device.friendlyName ?? "device")")
             self.deviceHandshakes.removeValue(forKey: deviceId)
+            self.deviceActiveAppId.removeValue(forKey: deviceId)
             saveHandshakes()
         }
         
@@ -223,8 +241,10 @@ extension GarminManager: IQAppMessageDelegate {
 
 extension GarminManager {
     func registerForAppMessages(device: IQDevice) {
-        let app = IQApp(uuid: garminAppId!, store: nil, device: device)
-        ConnectIQ.sharedInstance()?.register(forAppMessages: app, delegate: self)
+        for appId in validAppIds {
+            let app = IQApp(uuid: appId, store: nil, device: device)
+            ConnectIQ.sharedInstance()?.register(forAppMessages: app, delegate: self)
+        }
     }
 }
 #endif

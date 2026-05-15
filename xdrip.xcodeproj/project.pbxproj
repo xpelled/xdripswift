@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		1BE12E772FABC7860022D401 /* ConnectIQ in Frameworks */ = {isa = PBXBuildFile; productRef = 1BE12E762FABC7860022D401 /* ConnectIQ */; };
 		1BE12E792FABE04D0022D401 /* SettingsViewGarminSettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE12E782FABE04D0022D401 /* SettingsViewGarminSettingsViewModel.swift */; };
+		1BE12E7C2FB6FE710022D401 /* GluxSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE12E7B2FB6FE710022D401 /* GluxSettingsViewController.swift */; };
+		1BE12E7F2FB6FEC40022D401 /* SettingsViewGluxViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE12E7E2FB6FEC40022D401 /* SettingsViewGluxViewModel.swift */; };
+		1BE12E822FB6FFD60022D401 /* SettingsViewGluxManagementViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE12E812FB6FFD60022D401 /* SettingsViewGluxManagementViewModel.swift */; };
+		1BE12E852FB6FFDD0022D401 /* SettingsViewGluxDevicesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE12E842FB6FFDD0022D401 /* SettingsViewGluxDevicesViewModel.swift */; };
 		47037B8E2C072346000BD6BD /* ConstantsAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88EC279260120C000DF0EAF /* ConstantsAlerts.swift */; };
 		47037B8F2C072973000BD6BD /* ConstantsAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88EC279260120C000DF0EAF /* ConstantsAlerts.swift */; };
 		47037B902C072974000BD6BD /* ConstantsAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88EC279260120C000DF0EAF /* ConstantsAlerts.swift */; };
@@ -816,6 +820,10 @@
 		198D44D8260A3A3400A2B4A2 /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/LibreNFC.strings; sourceTree = "<group>"; };
 		198D44E7260A822000A2B4A2 /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/Main.strings; sourceTree = "<group>"; };
 		1BE12E782FABE04D0022D401 /* SettingsViewGarminSettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewGarminSettingsViewModel.swift; sourceTree = "<group>"; };
+		1BE12E7B2FB6FE710022D401 /* GluxSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GluxSettingsViewController.swift; sourceTree = "<group>"; };
+		1BE12E7E2FB6FEC40022D401 /* SettingsViewGluxViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewGluxViewModel.swift; sourceTree = "<group>"; };
+		1BE12E812FB6FFD60022D401 /* SettingsViewGluxManagementViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewGluxManagementViewModel.swift; sourceTree = "<group>"; };
+		1BE12E842FB6FFDD0022D401 /* SettingsViewGluxDevicesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewGluxDevicesViewModel.swift; sourceTree = "<group>"; };
 		2867F5C825BC209400AA1E98 /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		2867F5C925BC209500AA1E98 /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/Main.strings; sourceTree = "<group>"; };
 		2867F5CB25BC209500AA1E98 /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/Alerts.strings; sourceTree = "<group>"; };
@@ -2890,6 +2898,7 @@
 		F8B3A836227F090D004BA588 /* SettingsViewController */ = {
 			isa = PBXGroup;
 			children = (
+				1BE12E7B2FB6FE710022D401 /* GluxSettingsViewController.swift */,
 				F866974B28679A0100025441 /* LoopDelayScheduleViewController.swift */,
 				F8B3A841227F090D004BA588 /* SettingsViewController.swift */,
 				F8A389E6232ECE7E0010F405 /* SettingsViewUtilities.swift */,
@@ -2905,6 +2914,9 @@
 		F8B3A837227F090D004BA588 /* SettingsViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				1BE12E842FB6FFDD0022D401 /* SettingsViewGluxDevicesViewModel.swift */,
+				1BE12E812FB6FFD60022D401 /* SettingsViewGluxManagementViewModel.swift */,
+				1BE12E7E2FB6FEC40022D401 /* SettingsViewGluxViewModel.swift */,
 				1BE12E782FABE04D0022D401 /* SettingsViewGarminSettingsViewModel.swift */,
 				F8B3A838227F090D004BA588 /* SettingsViewAlertSettingsViewModel.swift */,
 				4767BDD52BD51E36009BC2EC /* SettingsViewAppleWatchSettingsViewModel.swift */,
@@ -4131,6 +4143,7 @@
 				47D9BC952A78498500AB85B2 /* BgReadingsDetailView.swift in Sources */,
 				F897E24B23FC86CF0075E0E8 /* CGMG5TransmitterDelegate.swift in Sources */,
 				F8F9723323A5915900C3F17D /* M5StackBluetoothTransmitterDelegate.swift in Sources */,
+				1BE12E822FB6FFD60022D401 /* SettingsViewGluxManagementViewModel.swift in Sources */,
 				F8B3A81B227DEC92004BA588 /* SensorsAccessor.swift in Sources */,
 				1BE12E792FABE04D0022D401 /* SettingsViewGarminSettingsViewModel.swift in Sources */,
 				F8F9721E23A5915900C3F17D /* LibreSensorState.swift in Sources */,
@@ -4259,6 +4272,7 @@
 				F8B3A844227F090E004BA588 /* SettingsViewAlertSettingsViewModel.swift in Sources */,
 				47244D662E8318DB007357C3 /* TransmitterReadSuccessManager.swift in Sources */,
 				475F2A872D0DA81400DE6019 /* ShowHideItemsView.swift in Sources */,
+				1BE12E852FB6FFDD0022D401 /* SettingsViewGluxDevicesViewModel.swift in Sources */,
 				F8D0587C24BCB570008C8734 /* SettingsViewHomeScreenSettingsViewModel.swift in Sources */,
 				F8A1586322EDB86E007F5B5D /* ConstantsSounds.swift in Sources */,
 				F8A1587322EDC893007F5B5D /* ConstantsDexcomShare.swift in Sources */,
@@ -4307,6 +4321,7 @@
 				F8B3A847227F090E004BA588 /* SettingsViewNightscoutSettingsViewModel.swift in Sources */,
 				F8B3A79622635A25004BA588 /* AlertEntry+CoreDataClass.swift in Sources */,
 				F8A2BC3725DB0D6D001D1E78 /* BluetoothPeripheralManager+CGMMiaoMiaoTransmitterDelegate.swift in Sources */,
+				1BE12E7D2FB6FE710022D401 /* GluxSettingsViewController.swift in Sources */,
 				F8F7B8E6259A6EBF00C47B04 /* LibreSmoothing.swift in Sources */,
 				47EDD1432BDD4FE900C5A286 /* ConstantsWidgetExtension.swift in Sources */,
 				F8284237276BE78D0097E0C9 /* String+Dexcom.swift in Sources */,
@@ -4413,6 +4428,7 @@
 				F8F9724723A69A8000C3F17D /* BluetoothPeripheralCategory.swift in Sources */,
 				F8B3A79522635A25004BA588 /* AlertType+CoreDataProperties.swift in Sources */,
 				F8AF11FA24B1FB3500AE5BA2 /* DexcomError.swift in Sources */,
+				1BE12E802FB6FEC40022D401 /* SettingsViewGluxViewModel.swift in Sources */,
 				F8B3A84C227F090E004BA588 /* SettingsViewController.swift in Sources */,
 				F88EC27A260120C000DF0EAF /* ConstantsAlerts.swift in Sources */,
 				F8F9720B23A5915900C3F17D /* SensorDataRxMessage.swift in Sources */,
