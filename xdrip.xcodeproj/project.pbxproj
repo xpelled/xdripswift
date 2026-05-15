@@ -12,6 +12,7 @@
 		1BE12E7C2FB6FE710022D401 /* GluxSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE12E7B2FB6FE710022D401 /* GluxSettingsViewController.swift */; };
 		1BE12E822FB6FFD60022D401 /* SettingsViewGluxManagementViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE12E812FB6FFD60022D401 /* SettingsViewGluxManagementViewModel.swift */; };
 		1BE12E852FB6FFDD0022D401 /* SettingsViewGluxDevicesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE12E842FB6FFDD0022D401 /* SettingsViewGluxDevicesViewModel.swift */; };
+		1BE12E8B2FB716620022D401 /* GluxDeviceSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE12E8A2FB716620022D401 /* GluxDeviceSettingsViewController.swift */; };
 		47037B8E2C072346000BD6BD /* ConstantsAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88EC279260120C000DF0EAF /* ConstantsAlerts.swift */; };
 		47037B8F2C072973000BD6BD /* ConstantsAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88EC279260120C000DF0EAF /* ConstantsAlerts.swift */; };
 		47037B902C072974000BD6BD /* ConstantsAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88EC279260120C000DF0EAF /* ConstantsAlerts.swift */; };
@@ -822,6 +823,7 @@
 		1BE12E7B2FB6FE710022D401 /* GluxSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GluxSettingsViewController.swift; sourceTree = "<group>"; };
 		1BE12E812FB6FFD60022D401 /* SettingsViewGluxManagementViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewGluxManagementViewModel.swift; sourceTree = "<group>"; };
 		1BE12E842FB6FFDD0022D401 /* SettingsViewGluxDevicesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewGluxDevicesViewModel.swift; sourceTree = "<group>"; };
+		1BE12E8A2FB716620022D401 /* GluxDeviceSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GluxDeviceSettingsViewController.swift; sourceTree = "<group>"; };
 		2867F5C825BC209400AA1E98 /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		2867F5C925BC209500AA1E98 /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/Main.strings; sourceTree = "<group>"; };
 		2867F5CB25BC209500AA1E98 /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/Alerts.strings; sourceTree = "<group>"; };
@@ -2896,6 +2898,7 @@
 		F8B3A836227F090D004BA588 /* SettingsViewController */ = {
 			isa = PBXGroup;
 			children = (
+				1BE12E8A2FB716620022D401 /* GluxDeviceSettingsViewController.swift */,
 				1BE12E7B2FB6FE710022D401 /* GluxSettingsViewController.swift */,
 				F866974B28679A0100025441 /* LoopDelayScheduleViewController.swift */,
 				F8B3A841227F090D004BA588 /* SettingsViewController.swift */,
@@ -4198,6 +4201,7 @@
 				F8CB59C02734976D00BA199E /* DexcomTransmitterTimeTxMessage.swift in Sources */,
 				F821CF6F229FC280005C1E43 /* Endpoint+Nightscout.swift in Sources */,
 				47F4E09E2E69C5A300087889 /* DexcomShareModels.swift in Sources */,
+				1BE12E8B2FB716620022D401 /* GluxDeviceSettingsViewController.swift in Sources */,
 				F8F9722A23A5915900C3F17D /* TransmitterBatteryInfo.swift in Sources */,
 				F821CF5D229BF43A005C1E43 /* NightscoutDateFormatter.swift in Sources */,
 				F8F16715272745A2001AA3D8 /* DexcomCalibrationResponseType.swift in Sources */,

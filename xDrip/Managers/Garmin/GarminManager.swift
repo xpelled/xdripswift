@@ -29,6 +29,7 @@ public class GarminManager: NSObject {
     private override init() {
         super.init()
         loadHandshakes()
+        loadSettings()
         #if canImport(ConnectIQ)
         let devices = getSavedGarminDevices()
         for device in devices {
@@ -58,8 +59,10 @@ public class GarminManager: NSObject {
         #endif
         UserDefaults.standard.removeObject(forKey: "GarminManager_SavedDevices")
         UserDefaults.standard.removeObject(forKey: "GarminManager_Handshakes")
+        UserDefaults.standard.removeObject(forKey: "GarminManager_DeviceSettings")
         deviceHandshakes.removeAll()
         deviceActiveAppId.removeAll()
+        deviceSettings.removeAll()
         log("Cleared all Garmin devices.")
         DispatchQueue.main.async { [weak self] in self?.onStatusChange?() }
     }
@@ -135,27 +138,40 @@ public class GarminManager: NSObject {
         #endif
     }
     
-    // Settings for the Data Field
-    public var showArrow: Bool {
-        get { UserDefaults.standard.bool(forKey: "GarminManager_ShowArrow") == false ? true : UserDefaults.standard.bool(forKey: "GarminManager_ShowArrow") } // Default true
-        set { 
-            UserDefaults.standard.set(newValue, forKey: "GarminManager_ShowArrow")
-            pushCurrentData() 
-        }
+    // Settings for the Data Field (Per Device)
+    private var deviceSettings: [String: [String: Bool]] = [:]
+    
+    public func getShowArrow(for deviceId: String) -> Bool {
+        return deviceSettings[deviceId]?["showArrow"] ?? true
     }
     
-    public var recordToFit: Bool {
-        get { UserDefaults.standard.object(forKey: "GarminManager_RecordToFit") as? Bool ?? true } // Default true
-        set { 
-            UserDefaults.standard.set(newValue, forKey: "GarminManager_RecordToFit")
-            pushCurrentData()
-        }
+    public func setShowArrow(_ value: Bool, for deviceId: String) {
+        var settings = deviceSettings[deviceId] ?? [:]
+        settings["showArrow"] = value
+        deviceSettings[deviceId] = settings
+        saveSettings()
+        pushCurrentData(for: deviceId)
     }
     
-    private func pushCurrentData() {
+    public func getRecordToFit(for deviceId: String) -> Bool {
+        return deviceSettings[deviceId]?["recordToFit"] ?? true
+    }
+    
+    public func setRecordToFit(_ value: Bool, for deviceId: String) {
+        var settings = deviceSettings[deviceId] ?? [:]
+        settings["recordToFit"] = value
+        deviceSettings[deviceId] = settings
+        saveSettings()
+        pushCurrentData(for: deviceId)
+    }
+    
+    private func pushCurrentData(for deviceId: String) {
+        #if canImport(ConnectIQ)
+        guard let device = getSavedGarminDevices().first(where: { $0.uuid.uuidString == deviceId }) else { return }
         if let provider = garminDataProvider, let data = provider() {
-            pushToGarmin(bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
+            pushViaConnectIQ(device: device, bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
         }
+        #endif
     }
     
     public func pushToGarmin(bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
@@ -177,7 +193,8 @@ public class GarminManager: NSObject {
     private func pushViaConnectIQ(device: IQDevice, bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
         #if canImport(ConnectIQ)
         // Use the specifically identified active AppID for this device, or fallback to Dev
-        let appId = deviceActiveAppId[device.uuid.uuidString] ?? devAppId!
+        let deviceId = device.uuid.uuidString
+        let appId = deviceActiveAppId[deviceId] ?? devAppId!
         let app = IQApp(uuid: appId, store: nil, device: device)
         
         let message: [AnyHashable: Any] = [
@@ -186,8 +203,8 @@ public class GarminManager: NSObject {
             "delta": deltaStr,
             "ts": timestamp,
             "bg": bgValue,
-            "showArrow": showArrow,
-            "recordToFit": recordToFit
+            "showArrow": getShowArrow(for: deviceId),
+            "recordToFit": getRecordToFit(for: deviceId)
         ]
         
         ConnectIQ.sharedInstance()?.sendMessage(message, to: app, progress: nil, completion: { [weak self] (result) in
@@ -229,6 +246,15 @@ public class GarminManager: NSObject {
             self.deviceHandshakes = saved.filter { Date().timeIntervalSince($0.value) < 300.0 }
         }
     }
+    private func saveSettings() {
+        UserDefaults.standard.set(deviceSettings, forKey: "GarminManager_DeviceSettings")
+    }
+    
+    private func loadSettings() {
+        if let saved = UserDefaults.standard.dictionary(forKey: "GarminManager_DeviceSettings") as? [String: [String: Bool]] {
+            self.deviceSettings = saved
+        }
+    }
 }
 
 #if canImport(ConnectIQ)
@@ -249,6 +275,14 @@ extension GarminManager: IQAppMessageDelegate {
         
         if cmd == "ready" {
             log("Handshake from \(app.device.friendlyName ?? "device") [\(app.uuid.uuidString.prefix(4))]")
+            
+            // SYNC SETTINGS FROM WATCH
+            var settings = deviceSettings[deviceId] ?? [:]
+            if let sArrow = dict["showArrow"] as? Bool { settings["showArrow"] = sArrow }
+            if let rFit = dict["recordToFit"] as? Bool { settings["recordToFit"] = rFit }
+            deviceSettings[deviceId] = settings
+            saveSettings()
+            
             self.deviceHandshakes[deviceId] = Date()
             saveHandshakes()
             

@@ -21,6 +21,12 @@ final class GluxSettingsViewController: UIViewController {
         
         // Listen for specific handshake responses for toasts
         NotificationCenter.default.addObserver(self, selector: #selector(handleHandshake(_:)), name: GarminManager.GarminHandshakeReceived, object: nil)
+        
+        // SYNC: Ping all known devices on entry to read their current settings
+        let devices = GarminManager.shared.connectedDevices
+        for device in devices {
+            GarminManager.shared.pingDevice(device)
+        }
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -131,7 +137,9 @@ extension GluxSettingsViewController: UITableViewDelegate {
             let devices = GarminManager.shared.connectedDevices
             if indexPath.row < devices.count {
                 let device = devices[indexPath.row]
-                showToast(message: "📡 Pinging \(device.friendlyName ?? "Garmin")...")
+                let detailVC = GluxDeviceSettingsViewController(deviceId: device.uuid.uuidString, deviceName: device.friendlyName ?? "Garmin")
+                self.navigationController?.pushViewController(detailVC, animated: true)
+                return
             }
         }
         

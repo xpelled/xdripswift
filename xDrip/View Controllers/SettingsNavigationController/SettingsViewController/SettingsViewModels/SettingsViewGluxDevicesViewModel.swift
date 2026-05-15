@@ -22,7 +22,7 @@ class SettingsViewGluxDevicesViewModel: NSObject, SettingsViewModelProtocol {
     }
     
     func accessoryType(index: Int) -> UITableViewCell.AccessoryType {
-        return .none
+        return .disclosureIndicator
     }
     
     func detailedText(index: Int) -> String? {
