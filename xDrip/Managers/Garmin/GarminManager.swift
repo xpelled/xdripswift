@@ -23,6 +23,7 @@ public class GarminManager: NSObject {
     
     private var lastPushTime: Date = .distantPast
     private var deviceHandshakes: [String: Date] = [:]
+    private var isSyncingDevices: Set<String> = []
     
     // Tracks which AppID a specific device is currently using
     private var deviceActiveAppId: [String: UUID] = [:]
@@ -272,10 +273,26 @@ public class GarminManager: NSObject {
 
     private func pushViaConnectIQ(device: IQDevice, bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float, rollbackValue: [String: Any]? = nil, retryCount: Int = 3) {
         #if canImport(ConnectIQ)
+        let deviceId = device.uuid.uuidString
+        
+        // Prevent concurrent syncs for the same device
+        if isSyncingDevices.contains(deviceId) {
+            log("Sync skip: already syncing \(device.friendlyName ?? "Garmin")")
+            return
+        }
+        isSyncingDevices.insert(deviceId)
+        
+        // Safety timeout to prevent permanent lock
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
+            if self?.isSyncingDevices.contains(deviceId) == true {
+                self?.log("Sync timeout: unlocking \(deviceId)")
+                self?.isSyncingDevices.remove(deviceId)
+            }
+        }
+        
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             
-            let deviceId = device.uuid.uuidString
             let appId = self.deviceActiveAppId[deviceId] ?? self.devAppId!
             let app = IQApp(uuid: appId, store: nil, device: device)
             
@@ -295,6 +312,7 @@ public class GarminManager: NSObject {
             
             ConnectIQ.sharedInstance()?.sendMessage(message, to: app, progress: nil, completion: { [weak self] (result) in
                 guard let self = self else { return }
+                self.isSyncingDevices.remove(deviceId) // UNLOCK
                 
                 if result == .success {
                     self.log("Sync OK: \(device.friendlyName ?? "Garmin")")
@@ -370,10 +388,10 @@ public class GarminManager: NSObject {
     }
     
     private func loadSettings() {
-        if let saved = UserDefaults.standard.dictionary(forKey: "GarminManager_DeviceSettings") as? [String: [String: Bool]] {
+        if let saved = UserDefaults.standard.dictionary(forKey: "GarminManager_DeviceSettings") as? [String: [String: Any]] {
             self.deviceSettings = saved
         }
-        if let pending = UserDefaults.standard.dictionary(forKey: "GarminManager_PendingSettings") as? [String: [String: Bool]] {
+        if let pending = UserDefaults.standard.dictionary(forKey: "GarminManager_PendingSettings") as? [String: [String: Any]] {
             self.pendingSettings = pending
         }
     }
@@ -410,6 +428,10 @@ extension GarminManager: IQAppMessageDelegate {
             var settings = deviceSettings[deviceId] ?? [:]
             if let sArrow = dict["showArrow"] as? Bool { settings["showArrow"] = sArrow }
             if let rFit = dict["recordToFit"] as? Bool { settings["recordToFit"] = rFit }
+            if let sTime = dict["showTime"] as? Bool { settings["showTime"] = sTime }
+            if let sTimeRem = dict["showTimeRemaining"] as? Bool { settings["showTimeRemaining"] = sTimeRem }
+            if let sDelta = dict["showDelta"] as? Bool { settings["showDelta"] = sDelta }
+            if let pMode = dict["priorityMode"] as? Int { settings["priorityMode"] = pMode }
             deviceSettings[deviceId] = settings
             saveSettings()
             
