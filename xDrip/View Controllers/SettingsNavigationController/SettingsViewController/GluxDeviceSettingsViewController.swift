@@ -125,7 +125,20 @@ extension GluxDeviceSettingsViewController: UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
         guard let section = Section(rawValue: indexPath.section) else { return }
         
-        if section == .actions {
+        if section == .preferences && indexPath.row == 5 {
+            let modes = [
+                GarminManager.PriorityMode.none.description,
+                GarminManager.PriorityMode.bg.description,
+                GarminManager.PriorityMode.bgTime.description,
+                GarminManager.PriorityMode.bgDelta.description
+            ]
+            let current = GarminManager.shared.getPriorityMode(for: deviceId).rawValue
+            
+            SettingsViewUtilities.runSelectedRowAction(selectedRowAction: .selectFromList(title: "Select Priority Mode", data: modes, selectedRow: current, actionTitle: "Select", cancelTitle: "Cancel", actionHandler: { [weak self] index in
+                guard let self = self, let mode = GarminManager.PriorityMode(rawValue: index) else { return }
+                GarminManager.shared.setPriorityMode(mode, for: self.deviceId)
+            }, cancelHandler: nil, didSelectRowHandler: nil), forRowWithIndex: indexPath.row, forSectionWithIndex: indexPath.section, withSettingsViewModel: nil, tableView: tableView, forUIViewController: self)
+        } else if section == .actions {
             #if canImport(ConnectIQ)
             if let device = GarminManager.shared.connectedDevices.first(where: { $0.uuid.uuidString == deviceId }) {
                 GarminManager.shared.pingDevice(device)
@@ -144,7 +157,7 @@ extension GluxDeviceSettingsViewController: UITableViewDataSource {
         guard let section = Section(rawValue: section) else { return 0 }
         switch section {
         case .info: return 1
-        case .preferences: return 2
+        case .preferences: return 6
         case .actions: return 1
         }
     }
@@ -167,18 +180,43 @@ extension GluxDeviceSettingsViewController: UITableViewDataSource {
             }
             #endif
         case .preferences:
-            if indexPath.row == 0 {
+            switch indexPath.row {
+            case 0:
                 cell.textLabel?.text = "Display Trend Arrow"
                 let toggle = UISwitch()
                 toggle.isOn = GarminManager.shared.getShowArrow(for: deviceId)
                 toggle.addTarget(self, action: #selector(onShowArrowToggle(_:)), for: .valueChanged)
                 cell.accessoryView = toggle
-            } else {
+            case 1:
                 cell.textLabel?.text = "Record BG data to FIT"
                 let toggle = UISwitch()
                 toggle.isOn = GarminManager.shared.getRecordToFit(for: deviceId)
                 toggle.addTarget(self, action: #selector(onRecordToFitToggle(_:)), for: .valueChanged)
                 cell.accessoryView = toggle
+            case 2:
+                cell.textLabel?.text = "Show Elapsed Time"
+                let toggle = UISwitch()
+                toggle.isOn = GarminManager.shared.getShowTime(for: deviceId)
+                toggle.addTarget(self, action: #selector(onShowTimeToggle(_:)), for: .valueChanged)
+                cell.accessoryView = toggle
+            case 3:
+                cell.textLabel?.text = "Show Time Remaining"
+                let toggle = UISwitch()
+                toggle.isOn = GarminManager.shared.getShowTimeRemaining(for: deviceId)
+                toggle.addTarget(self, action: #selector(onShowTimeRemainingToggle(_:)), for: .valueChanged)
+                cell.accessoryView = toggle
+            case 4:
+                cell.textLabel?.text = "Show Delta"
+                let toggle = UISwitch()
+                toggle.isOn = GarminManager.shared.getShowDelta(for: deviceId)
+                toggle.addTarget(self, action: #selector(onShowDeltaToggle(_:)), for: .valueChanged)
+                cell.accessoryView = toggle
+            case 5:
+                cell.textLabel?.text = "Priority Mode"
+                cell.detailTextLabel?.text = GarminManager.shared.getPriorityMode(for: deviceId).description
+                cell.accessoryType = .disclosureIndicator
+                cell.selectionStyle = .default
+            default: break
             }
         case .actions:
             cell.textLabel?.text = "Send Test Ping"
@@ -195,6 +233,18 @@ extension GluxDeviceSettingsViewController: UITableViewDataSource {
     
     @objc private func onRecordToFitToggle(_ sender: UISwitch) {
         GarminManager.shared.setRecordToFit(sender.isOn, for: deviceId)
+    }
+    
+    @objc private func onShowTimeToggle(_ sender: UISwitch) {
+        GarminManager.shared.setShowTime(sender.isOn, for: deviceId)
+    }
+    
+    @objc private func onShowTimeRemainingToggle(_ sender: UISwitch) {
+        GarminManager.shared.setShowTimeRemaining(sender.isOn, for: deviceId)
+    }
+    
+    @objc private func onShowDeltaToggle(_ sender: UISwitch) {
+        GarminManager.shared.setShowDelta(sender.isOn, for: deviceId)
     }
     
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {

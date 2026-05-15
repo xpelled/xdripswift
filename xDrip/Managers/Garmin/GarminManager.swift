@@ -139,53 +139,96 @@ public class GarminManager: NSObject {
         #endif
     }
     
+    public enum PriorityMode: Int {
+        case none = 0
+        case bg = 1
+        case bgTime = 2
+        case bgDelta = 3
+        
+        var description: String {
+            switch self {
+            case .none: return "Equal (Off)"
+            case .bg: return "BG"
+            case .bgTime: return "BG + Time"
+            case .bgDelta: return "BG + Delta"
+            }
+        }
+    }
+    
     // Settings for the Data Field (Per Device)
-    private var deviceSettings: [String: [String: Bool]] = [:]
-    private var pendingSettings: [String: [String: Bool]] = [:]
+    private var deviceSettings: [String: [String: Any]] = [:]
+    private var pendingSettings: [String: [String: Any]] = [:]
     
     public func getShowArrow(for deviceId: String) -> Bool {
-        return deviceSettings[deviceId]?["showArrow"] ?? true
+        return deviceSettings[deviceId]?["showArrow"] as? Bool ?? true
     }
     
     public func setShowArrow(_ value: Bool, for deviceId: String) {
-        let oldValue = getShowArrow(for: deviceId)
-        
-        // Optimistic update
-        var settings = deviceSettings[deviceId] ?? [:]
-        settings["showArrow"] = value
-        deviceSettings[deviceId] = settings
-        
-        // Track as pending
-        var pending = pendingSettings[deviceId] ?? [:]
-        pending["showArrow"] = value
-        pendingSettings[deviceId] = pending
-        
-        saveSettings()
-        pushCurrentData(for: deviceId, rollbackValue: ["showArrow": oldValue])
+        updateSetting("showArrow", value: value, for: deviceId)
     }
     
     public func getRecordToFit(for deviceId: String) -> Bool {
-        return deviceSettings[deviceId]?["recordToFit"] ?? true
+        return deviceSettings[deviceId]?["recordToFit"] as? Bool ?? true
     }
     
     public func setRecordToFit(_ value: Bool, for deviceId: String) {
-        let oldValue = getRecordToFit(for: deviceId)
+        updateSetting("recordToFit", value: value, for: deviceId)
+    }
+    
+    public func getShowTime(for deviceId: String) -> Bool {
+        return deviceSettings[deviceId]?["showTime"] as? Bool ?? true
+    }
+    
+    public func setShowTime(_ value: Bool, for deviceId: String) {
+        updateSetting("showTime", value: value, for: deviceId)
+    }
+    
+    public func getShowTimeRemaining(for deviceId: String) -> Bool {
+        return deviceSettings[deviceId]?["showTimeRemaining"] as? Bool ?? false
+    }
+    
+    public func setShowTimeRemaining(_ value: Bool, for deviceId: String) {
+        updateSetting("showTimeRemaining", value: value, for: deviceId)
+    }
+    
+    public func getShowDelta(for deviceId: String) -> Bool {
+        return deviceSettings[deviceId]?["showDelta"] as? Bool ?? true
+    }
+    
+    public func setShowDelta(_ value: Bool, for deviceId: String) {
+        updateSetting("showDelta", value: value, for: deviceId)
+    }
+    
+    public func getPriorityMode(for deviceId: String) -> PriorityMode {
+        let val = deviceSettings[deviceId]?["priorityMode"] as? Int ?? 0
+        return PriorityMode(rawValue: val) ?? .none
+    }
+    
+    public func setPriorityMode(_ value: PriorityMode, for deviceId: String) {
+        updateSetting("priorityMode", value: value.rawValue, for: deviceId)
+    }
+    
+    private func updateSetting(_ key: String, value: Any, for deviceId: String) {
+        let oldSettings = deviceSettings[deviceId] ?? [:]
+        let oldValue = oldSettings[key]
         
         // Optimistic update
-        var settings = deviceSettings[deviceId] ?? [:]
-        settings["recordToFit"] = value
+        var settings = oldSettings
+        settings[key] = value
         deviceSettings[deviceId] = settings
         
         // Track as pending
         var pending = pendingSettings[deviceId] ?? [:]
-        pending["recordToFit"] = value
+        pending[key] = value
         pendingSettings[deviceId] = pending
         
         saveSettings()
-        pushCurrentData(for: deviceId, rollbackValue: ["recordToFit": oldValue])
+        
+        let rollback: [String: Any]? = oldValue != nil ? [key: oldValue!] : nil
+        pushCurrentData(for: deviceId, rollbackValue: rollback)
     }
     
-    private func pushCurrentData(for deviceId: String, rollbackValue: [String: Bool]? = nil, retryCount: Int = 3) {
+    private func pushCurrentData(for deviceId: String, rollbackValue: [String: Any]? = nil, retryCount: Int = 3) {
         #if canImport(ConnectIQ)
         guard let device = getSavedGarminDevices().first(where: { $0.uuid.uuidString == deviceId }) else { return }
         
@@ -227,7 +270,7 @@ public class GarminManager: NSObject {
         #endif
     }
 
-    private func pushViaConnectIQ(device: IQDevice, bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float, rollbackValue: [String: Bool]? = nil, retryCount: Int = 3) {
+    private func pushViaConnectIQ(device: IQDevice, bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float, rollbackValue: [String: Any]? = nil, retryCount: Int = 3) {
         #if canImport(ConnectIQ)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
@@ -243,7 +286,11 @@ public class GarminManager: NSObject {
                 "ts": timestamp,
                 "bg": bgValue,
                 "showArrow": self.getShowArrow(for: deviceId),
-                "recordToFit": self.getRecordToFit(for: deviceId)
+                "recordToFit": self.getRecordToFit(for: deviceId),
+                "showTime": self.getShowTime(for: deviceId),
+                "showTimeRemaining": self.getShowTimeRemaining(for: deviceId),
+                "showDelta": self.getShowDelta(for: deviceId),
+                "priorityMode": self.getPriorityMode(for: deviceId).rawValue
             ]
             
             ConnectIQ.sharedInstance()?.sendMessage(message, to: app, progress: nil, completion: { [weak self] (result) in
@@ -275,8 +322,6 @@ public class GarminManager: NSObject {
                                 settings[key] = val
                             }
                             self.deviceSettings[deviceId] = settings
-                            self.saveSettings()
-                            DispatchQueue.main.async { self.onStatusChange?() }
                         }
                         self.pendingSettings[deviceId] = nil
                         self.saveSettings()
