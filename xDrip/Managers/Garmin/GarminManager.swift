@@ -8,6 +8,7 @@ public class GarminManager: NSObject {
     public static let shared = GarminManager()
     
     public static let GarminHandshakeReceived = Notification.Name("GarminHandshakeReceived")
+    public static let GarminSettingsSyncResult = Notification.Name("GarminManager_SettingsSyncResult")
     
     // Support for both Dev and Beta versions
     private let devAppId = UUID(uuidString: "A3421FEE-D289-106A-538C-B9547AB3F101")
@@ -140,17 +141,27 @@ public class GarminManager: NSObject {
     
     // Settings for the Data Field (Per Device)
     private var deviceSettings: [String: [String: Bool]] = [:]
+    private var pendingSettings: [String: [String: Bool]] = [:]
     
     public func getShowArrow(for deviceId: String) -> Bool {
         return deviceSettings[deviceId]?["showArrow"] ?? true
     }
     
     public func setShowArrow(_ value: Bool, for deviceId: String) {
+        let oldValue = getShowArrow(for: deviceId)
+        
+        // Optimistic update
         var settings = deviceSettings[deviceId] ?? [:]
         settings["showArrow"] = value
         deviceSettings[deviceId] = settings
+        
+        // Track as pending
+        var pending = pendingSettings[deviceId] ?? [:]
+        pending["showArrow"] = value
+        pendingSettings[deviceId] = pending
+        
         saveSettings()
-        pushCurrentData(for: deviceId)
+        pushCurrentData(for: deviceId, rollbackValue: ["showArrow": oldValue])
     }
     
     public func getRecordToFit(for deviceId: String) -> Bool {
@@ -158,18 +169,44 @@ public class GarminManager: NSObject {
     }
     
     public func setRecordToFit(_ value: Bool, for deviceId: String) {
+        let oldValue = getRecordToFit(for: deviceId)
+        
+        // Optimistic update
         var settings = deviceSettings[deviceId] ?? [:]
         settings["recordToFit"] = value
         deviceSettings[deviceId] = settings
+        
+        // Track as pending
+        var pending = pendingSettings[deviceId] ?? [:]
+        pending["recordToFit"] = value
+        pendingSettings[deviceId] = pending
+        
         saveSettings()
-        pushCurrentData(for: deviceId)
+        pushCurrentData(for: deviceId, rollbackValue: ["recordToFit": oldValue])
     }
     
-    private func pushCurrentData(for deviceId: String) {
+    private func pushCurrentData(for deviceId: String, rollbackValue: [String: Bool]? = nil, retryCount: Int = 3) {
         #if canImport(ConnectIQ)
         guard let device = getSavedGarminDevices().first(where: { $0.uuid.uuidString == deviceId }) else { return }
-        if let provider = garminDataProvider, let data = provider() {
-            pushViaConnectIQ(device: device, bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
+        
+        // Check if device is even reachable before trying
+        let status = ConnectIQ.sharedInstance()?.getDeviceStatus(device) ?? .notConnected
+        if status != .connected {
+            log("Device \(device.friendlyName ?? "") disconnected. Settings 'parked' for later.")
+            return // Keep in pendingSettings, will retry on reconnect
+        }
+        
+        var data: (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float)?
+        if Thread.isMainThread {
+            data = garminDataProvider?()
+        } else {
+            DispatchQueue.main.sync {
+                data = self.garminDataProvider?()
+            }
+        }
+        
+        if let data = data {
+            pushViaConnectIQ(device: device, bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue, rollbackValue: rollbackValue, retryCount: retryCount)
         }
         #endif
     }
@@ -190,30 +227,65 @@ public class GarminManager: NSObject {
         #endif
     }
 
-    private func pushViaConnectIQ(device: IQDevice, bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
+    private func pushViaConnectIQ(device: IQDevice, bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float, rollbackValue: [String: Bool]? = nil, retryCount: Int = 3) {
         #if canImport(ConnectIQ)
-        // Use the specifically identified active AppID for this device, or fallback to Dev
-        let deviceId = device.uuid.uuidString
-        let appId = deviceActiveAppId[deviceId] ?? devAppId!
-        let app = IQApp(uuid: appId, store: nil, device: device)
-        
-        let message: [AnyHashable: Any] = [
-            "bgStr": bgStr,
-            "trend": trendStr,
-            "delta": deltaStr,
-            "ts": timestamp,
-            "bg": bgValue,
-            "showArrow": getShowArrow(for: deviceId),
-            "recordToFit": getRecordToFit(for: deviceId)
-        ]
-        
-        ConnectIQ.sharedInstance()?.sendMessage(message, to: app, progress: nil, completion: { [weak self] (result) in
-            if result == .success {
-                self?.log("Pushed to \(device.friendlyName ?? "Garmin") (\(bgStr))")
-            } else {
-                self?.log("Failed push to \(device.friendlyName ?? "Garmin"): \(result.rawValue)")
-            }
-        })
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            
+            let deviceId = device.uuid.uuidString
+            let appId = self.deviceActiveAppId[deviceId] ?? self.devAppId!
+            let app = IQApp(uuid: appId, store: nil, device: device)
+            
+            let message: [AnyHashable: Any] = [
+                "bgStr": bgStr,
+                "trend": trendStr,
+                "delta": deltaStr,
+                "ts": timestamp,
+                "bg": bgValue,
+                "showArrow": self.getShowArrow(for: deviceId),
+                "recordToFit": self.getRecordToFit(for: deviceId)
+            ]
+            
+            ConnectIQ.sharedInstance()?.sendMessage(message, to: app, progress: nil, completion: { [weak self] (result) in
+                guard let self = self else { return }
+                
+                if result == .success {
+                    self.log("Sync OK: \(device.friendlyName ?? "Garmin")")
+                    self.pendingSettings[deviceId] = nil // Clear pending on success
+                    self.saveSettings()
+                    NotificationCenter.default.post(name: GarminManager.GarminSettingsSyncResult, object: nil, userInfo: ["success": true, "deviceId": deviceId])
+                } else {
+                    let currentStatus = ConnectIQ.sharedInstance()?.getDeviceStatus(device) ?? .notConnected
+                    if currentStatus != .connected {
+                        self.log("Sync Parked (Disconnected): \(device.friendlyName ?? "Garmin")")
+                        self.saveSettings() // Persist parked state
+                        // Do not post failure, just keep in pending
+                    } else if retryCount > 0 {
+                        self.log("Sync Retrying (\(retryCount) left): \(device.friendlyName ?? "Garmin") error: \(result.rawValue)")
+                        // Retry after 2 seconds
+                        DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
+                            self.pushCurrentData(for: deviceId, rollbackValue: rollbackValue, retryCount: retryCount - 1)
+                        }
+                    } else {
+                        // PERMANENT FAILURE - ROLLBACK
+                        self.log("Sync FATAL: \(device.friendlyName ?? "Garmin"). Rolling back.")
+                        if let rollback = rollbackValue {
+                            var settings = self.deviceSettings[deviceId] ?? [:]
+                            for (key, val) in rollback {
+                                settings[key] = val
+                            }
+                            self.deviceSettings[deviceId] = settings
+                            self.saveSettings()
+                            DispatchQueue.main.async { self.onStatusChange?() }
+                        }
+                        self.pendingSettings[deviceId] = nil
+                        self.saveSettings()
+                        DispatchQueue.main.async { self.onStatusChange?() }
+                        NotificationCenter.default.post(name: GarminManager.GarminSettingsSyncResult, object: nil, userInfo: ["success": false, "deviceId": deviceId, "error": "\(result.rawValue)"])
+                    }
+                }
+            })
+        }
         #endif
     }
     
@@ -246,13 +318,18 @@ public class GarminManager: NSObject {
             self.deviceHandshakes = saved.filter { Date().timeIntervalSince($0.value) < 300.0 }
         }
     }
+    
     private func saveSettings() {
         UserDefaults.standard.set(deviceSettings, forKey: "GarminManager_DeviceSettings")
+        UserDefaults.standard.set(pendingSettings, forKey: "GarminManager_PendingSettings")
     }
     
     private func loadSettings() {
         if let saved = UserDefaults.standard.dictionary(forKey: "GarminManager_DeviceSettings") as? [String: [String: Bool]] {
             self.deviceSettings = saved
+        }
+        if let pending = UserDefaults.standard.dictionary(forKey: "GarminManager_PendingSettings") as? [String: [String: Bool]] {
+            self.pendingSettings = pending
         }
     }
 }
@@ -261,9 +338,17 @@ public class GarminManager: NSObject {
 extension GarminManager: IQDeviceEventDelegate {
     public func deviceStatusChanged(_ device: IQDevice!, status: IQDeviceStatus) {
         log("Device \(device.friendlyName ?? "") status: \(status.rawValue)")
+        
+        // If device reconnected, push any pending settings
+        if status == .connected && pendingSettings[device.uuid.uuidString] != nil {
+            log("Device \(device.friendlyName ?? "") reconnected. Pushing pending settings...")
+            pushCurrentData(for: device.uuid.uuidString)
+        }
+        
         DispatchQueue.main.async { [weak self] in self?.onStatusChange?() }
     }
 }
+
 
 extension GarminManager: IQAppMessageDelegate {
     public func receivedMessage(_ message: Any!, from app: IQApp!) {
@@ -286,7 +371,16 @@ extension GarminManager: IQAppMessageDelegate {
             self.deviceHandshakes[deviceId] = Date()
             saveHandshakes()
             
-            if let provider = garminDataProvider, let data = provider() {
+            var data: (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float)?
+            if Thread.isMainThread {
+                data = garminDataProvider?()
+            } else {
+                DispatchQueue.main.sync {
+                    data = self.garminDataProvider?()
+                }
+            }
+            
+            if let data = data {
                 pushViaConnectIQ(device: app.device, bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
             }
             

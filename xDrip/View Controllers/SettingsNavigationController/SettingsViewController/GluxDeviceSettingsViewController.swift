@@ -29,15 +29,44 @@ final class GluxDeviceSettingsViewController: UIViewController {
         title = deviceName
         setupView()
         
-        // Reload when status or settings change
+        // Listen for status changes (handshakes, connections) from Garmin devices
         GarminManager.shared.onStatusChange = { [weak self] in
             self?.tableView.reloadData()
         }
+        
+        // Listen for sync results
+        NotificationCenter.default.addObserver(self, selector: #selector(handleSyncResult(_:)), name: GarminManager.GarminSettingsSyncResult, object: nil)
+        
+        // Listen for handshakes (like pings)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleHandshake(_:)), name: GarminManager.GarminHandshakeReceived, object: nil)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         GarminManager.shared.onStatusChange = nil
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc private func handleHandshake(_ notification: Notification) {
+        if let name = notification.userInfo?["deviceName"] as? String {
+            SettingsViewUtilities.showToast(on: self, message: "✅ \(name) Responded")
+        }
+    }
+    
+    @objc private func handleSyncResult(_ notification: Notification) {
+        guard let success = notification.userInfo?["success"] as? Bool,
+              let id = notification.userInfo?["deviceId"] as? String,
+              id == self.deviceId else { return }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            if success {
+                SettingsViewUtilities.showToast(on: self, message: "☁️ Settings Synced")
+            } else {
+                let error = notification.userInfo?["error"] as? String ?? "Unknown"
+                SettingsViewUtilities.showToast(on: self, message: "❌ Sync Failed: \(error)")
+            }
+        }
     }
     
     private func setupView() {

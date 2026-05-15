@@ -210,4 +210,65 @@ class SettingsViewUtilities {
         }
     }
     
+    private static var toastQueue: [String] = []
+    private static var isShowingToast = false
+    
+    /// Shows a non-blocking toast notification. Queues messages if one is already showing.
+    static func showToast(on controller: UIViewController, message: String) {
+        DispatchQueue.main.async {
+            toastQueue.append(message)
+            if !isShowingToast {
+                processNextToast(on: controller)
+            }
+        }
+    }
+    
+    private static func processNextToast(on controller: UIViewController) {
+        guard !toastQueue.isEmpty, let targetView = controller.view else {
+            isShowingToast = false
+            return
+        }
+        
+        isShowingToast = true
+        let message = toastQueue.removeFirst()
+        
+        let toastLabel = UILabel()
+        toastLabel.backgroundColor = UIColor.black.withAlphaComponent(0.8)
+        toastLabel.textColor = .white
+        toastLabel.textAlignment = .center
+        toastLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        toastLabel.text = message
+        toastLabel.alpha = 0.0
+        toastLabel.layer.cornerRadius = 10
+        toastLabel.clipsToBounds = true
+        
+        let labelHeight: CGFloat = 40
+        let padding: CGFloat = 20
+        let maxWidth = targetView.frame.width - (padding * 2)
+        let labelWidth = min(maxWidth, message.size(withAttributes: [.font: toastLabel.font!]).width + 40)
+        
+        toastLabel.frame = CGRect(
+            x: (targetView.frame.width - labelWidth) / 2,
+            y: targetView.frame.height - 120,
+            width: labelWidth,
+            height: labelHeight
+        )
+        
+        targetView.addSubview(toastLabel)
+        
+        UIView.animate(withDuration: 0.3, animations: {
+            toastLabel.alpha = 1.0
+        }) { _ in
+            // Wait 1.5s then fade out
+            UIView.animate(withDuration: 0.5, delay: 1.5, options: .curveEaseOut, animations: {
+                toastLabel.alpha = 0.0
+            }) { _ in
+                toastLabel.removeFromSuperview()
+                // Process next one after a small gap
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    processNextToast(on: controller)
+                }
+            }
+        }
+    }
 }
