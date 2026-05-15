@@ -54,5 +54,7 @@ class SettingsViewGluxManagementViewModel: NSObject, SettingsViewModelProtocol {
     }
     
     func isEnabled(index: Int) -> Bool { return true }
-    func completeSettingsViewRefreshNeeded(index: Int) -> Bool { return false }
+    func completeSettingsViewRefreshNeeded(index: Int) -> Bool {
+        return index == Setting.clearDevices.rawValue
+    }
 }
