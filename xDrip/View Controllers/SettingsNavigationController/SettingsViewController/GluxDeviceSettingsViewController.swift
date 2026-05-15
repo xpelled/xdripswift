@@ -125,7 +125,7 @@ extension GluxDeviceSettingsViewController: UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
         guard let section = Section(rawValue: indexPath.section) else { return }
         
-        if section == .preferences && indexPath.row == 5 {
+        if section == .preferences && indexPath.row == 4 {
             let modes = [
                 GarminManager.PriorityMode.none.description,
                 GarminManager.PriorityMode.bg.description,
@@ -137,6 +137,18 @@ extension GluxDeviceSettingsViewController: UITableViewDelegate {
             SettingsViewUtilities.runSelectedRowAction(selectedRowAction: .selectFromList(title: "Select Priority Mode", data: modes, selectedRow: current, actionTitle: "Select", cancelTitle: "Cancel", actionHandler: { [weak self] index in
                 guard let self = self, let mode = GarminManager.PriorityMode(rawValue: index) else { return }
                 GarminManager.shared.setPriorityMode(mode, for: self.deviceId)
+            }, cancelHandler: nil, didSelectRowHandler: nil), forRowWithIndex: indexPath.row, forSectionWithIndex: indexPath.section, withSettingsViewModel: nil, tableView: tableView, forUIViewController: self)
+        } else if section == .preferences && indexPath.row == 2 {
+            let modes = [
+                GarminManager.TimerMode.off.description,
+                GarminManager.TimerMode.elapsed.description,
+                GarminManager.TimerMode.remaining.description
+            ]
+            let current = GarminManager.shared.getTimerMode(for: deviceId).rawValue
+            
+            SettingsViewUtilities.runSelectedRowAction(selectedRowAction: .selectFromList(title: "Select Timer Mode", data: modes, selectedRow: current, actionTitle: "Select", cancelTitle: "Cancel", actionHandler: { [weak self] index in
+                guard let self = self, let mode = GarminManager.TimerMode(rawValue: index) else { return }
+                GarminManager.shared.setTimerMode(mode, for: self.deviceId)
             }, cancelHandler: nil, didSelectRowHandler: nil), forRowWithIndex: indexPath.row, forSectionWithIndex: indexPath.section, withSettingsViewModel: nil, tableView: tableView, forUIViewController: self)
         } else if section == .actions {
             #if canImport(ConnectIQ)
@@ -157,7 +169,7 @@ extension GluxDeviceSettingsViewController: UITableViewDataSource {
         guard let section = Section(rawValue: section) else { return 0 }
         switch section {
         case .info: return 1
-        case .preferences: return 6
+        case .preferences: return 5
         case .actions: return 1
         }
     }
@@ -194,24 +206,17 @@ extension GluxDeviceSettingsViewController: UITableViewDataSource {
                 toggle.addTarget(self, action: #selector(onRecordToFitToggle(_:)), for: .valueChanged)
                 cell.accessoryView = toggle
             case 2:
-                cell.textLabel?.text = "Show Elapsed Time"
-                let toggle = UISwitch()
-                toggle.isOn = GarminManager.shared.getShowTime(for: deviceId)
-                toggle.addTarget(self, action: #selector(onShowTimeToggle(_:)), for: .valueChanged)
-                cell.accessoryView = toggle
+                cell.textLabel?.text = "Timer Mode"
+                cell.detailTextLabel?.text = GarminManager.shared.getTimerMode(for: deviceId).description
+                cell.accessoryType = .disclosureIndicator
+                cell.selectionStyle = .default
             case 3:
-                cell.textLabel?.text = "Show Time Remaining"
-                let toggle = UISwitch()
-                toggle.isOn = GarminManager.shared.getShowTimeRemaining(for: deviceId)
-                toggle.addTarget(self, action: #selector(onShowTimeRemainingToggle(_:)), for: .valueChanged)
-                cell.accessoryView = toggle
-            case 4:
                 cell.textLabel?.text = "Show Delta"
                 let toggle = UISwitch()
                 toggle.isOn = GarminManager.shared.getShowDelta(for: deviceId)
                 toggle.addTarget(self, action: #selector(onShowDeltaToggle(_:)), for: .valueChanged)
                 cell.accessoryView = toggle
-            case 5:
+            case 4:
                 cell.textLabel?.text = "Priority Mode"
                 cell.detailTextLabel?.text = GarminManager.shared.getPriorityMode(for: deviceId).description
                 cell.accessoryType = .disclosureIndicator
@@ -233,14 +238,6 @@ extension GluxDeviceSettingsViewController: UITableViewDataSource {
     
     @objc private func onRecordToFitToggle(_ sender: UISwitch) {
         GarminManager.shared.setRecordToFit(sender.isOn, for: deviceId)
-    }
-    
-    @objc private func onShowTimeToggle(_ sender: UISwitch) {
-        GarminManager.shared.setShowTime(sender.isOn, for: deviceId)
-    }
-    
-    @objc private func onShowTimeRemainingToggle(_ sender: UISwitch) {
-        GarminManager.shared.setShowTimeRemaining(sender.isOn, for: deviceId)
     }
     
     @objc private func onShowDeltaToggle(_ sender: UISwitch) {

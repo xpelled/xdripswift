@@ -27,6 +27,7 @@ public class GarminManager: NSObject {
     
     // Tracks which AppID a specific device is currently using
     private var deviceActiveAppId: [String: UUID] = [:]
+    private let syncQueue = DispatchQueue(label: "com.xdrip.garmin.sync")
     
     private override init() {
         super.init()
@@ -99,8 +100,9 @@ public class GarminManager: NSObject {
         
         DispatchQueue.main.async { [weak self] in self?.onStatusChange?() }
         return true
-        #endif
+        #else
         return false
+        #endif
     }
 
     public func pingDevice(_ device: IQDevice) {
@@ -155,6 +157,20 @@ public class GarminManager: NSObject {
             }
         }
     }
+
+    public enum TimerMode: Int {
+        case off = 0
+        case elapsed = 1
+        case remaining = 2
+        
+        var description: String {
+            switch self {
+            case .off: return "Off"
+            case .elapsed: return "Elapsed Time"
+            case .remaining: return "Time Remaining"
+            }
+        }
+    }
     
     // Settings for the Data Field (Per Device)
     private var deviceSettings: [String: [String: Any]] = [:]
@@ -176,20 +192,13 @@ public class GarminManager: NSObject {
         updateSetting("recordToFit", value: value, for: deviceId)
     }
     
-    public func getShowTime(for deviceId: String) -> Bool {
-        return deviceSettings[deviceId]?["showTime"] as? Bool ?? true
+    public func getTimerMode(for deviceId: String) -> TimerMode {
+        let val = deviceSettings[deviceId]?["timerMode"] as? Int ?? TimerMode.elapsed.rawValue
+        return TimerMode(rawValue: val) ?? .elapsed
     }
     
-    public func setShowTime(_ value: Bool, for deviceId: String) {
-        updateSetting("showTime", value: value, for: deviceId)
-    }
-    
-    public func getShowTimeRemaining(for deviceId: String) -> Bool {
-        return deviceSettings[deviceId]?["showTimeRemaining"] as? Bool ?? false
-    }
-    
-    public func setShowTimeRemaining(_ value: Bool, for deviceId: String) {
-        updateSetting("showTimeRemaining", value: value, for: deviceId)
+    public func setTimerMode(_ mode: TimerMode, for deviceId: String) {
+        updateSetting("timerMode", value: mode.rawValue, for: deviceId)
     }
     
     public func getShowDelta(for deviceId: String) -> Bool {
@@ -275,18 +284,27 @@ public class GarminManager: NSObject {
         #if canImport(ConnectIQ)
         let deviceId = device.uuid.uuidString
         
-        // Prevent concurrent syncs for the same device
-        if isSyncingDevices.contains(deviceId) {
-            log("Sync skip: already syncing \(device.friendlyName ?? "Garmin")")
+        var shouldSkip = false
+        syncQueue.sync {
+            if isSyncingDevices.contains(deviceId) {
+                shouldSkip = true
+            } else {
+                isSyncingDevices.insert(deviceId)
+            }
+        }
+        
+        if shouldSkip {
+            log("Sync skip: \(device.friendlyName ?? "Garmin") already in progress")
             return
         }
-        isSyncingDevices.insert(deviceId)
         
         // Safety timeout to prevent permanent lock
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
-            if self?.isSyncingDevices.contains(deviceId) == true {
-                self?.log("Sync timeout: unlocking \(deviceId)")
-                self?.isSyncingDevices.remove(deviceId)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15.0) { [weak self] in
+            self?.syncQueue.async {
+                if self?.isSyncingDevices.contains(deviceId) == true {
+                    self?.log("Sync timeout: unlocking \(deviceId)")
+                    self?.isSyncingDevices.remove(deviceId)
+                }
             }
         }
         
@@ -296,6 +314,8 @@ public class GarminManager: NSObject {
             let appId = self.deviceActiveAppId[deviceId] ?? self.devAppId!
             let app = IQApp(uuid: appId, store: nil, device: device)
             
+            self.log("Pushing to \(device.friendlyName ?? "Garmin") [\(appId.uuidString.prefix(4))]")
+            
             let message: [AnyHashable: Any] = [
                 "bgStr": bgStr,
                 "trend": trendStr,
@@ -304,15 +324,14 @@ public class GarminManager: NSObject {
                 "bg": bgValue,
                 "showArrow": self.getShowArrow(for: deviceId),
                 "recordToFit": self.getRecordToFit(for: deviceId),
-                "showTime": self.getShowTime(for: deviceId),
-                "showTimeRemaining": self.getShowTimeRemaining(for: deviceId),
+                "timerMode": self.getTimerMode(for: deviceId).rawValue,
                 "showDelta": self.getShowDelta(for: deviceId),
                 "priorityMode": self.getPriorityMode(for: deviceId).rawValue
             ]
             
             ConnectIQ.sharedInstance()?.sendMessage(message, to: app, progress: nil, completion: { [weak self] (result) in
                 guard let self = self else { return }
-                self.isSyncingDevices.remove(deviceId) // UNLOCK
+                self.syncQueue.async { self.isSyncingDevices.remove(deviceId) }
                 
                 if result == .success {
                     self.log("Sync OK: \(device.friendlyName ?? "Garmin")")
@@ -320,13 +339,13 @@ public class GarminManager: NSObject {
                     self.saveSettings()
                     NotificationCenter.default.post(name: GarminManager.GarminSettingsSyncResult, object: nil, userInfo: ["success": true, "deviceId": deviceId])
                 } else {
+                    self.log("Sync Error [\(result.rawValue)]: \(device.friendlyName ?? "Garmin")")
+                    
                     let currentStatus = ConnectIQ.sharedInstance()?.getDeviceStatus(device) ?? .notConnected
                     if currentStatus != .connected {
                         self.log("Sync Parked (Disconnected): \(device.friendlyName ?? "Garmin")")
-                        self.saveSettings() // Persist parked state
-                        // Do not post failure, just keep in pending
                     } else if retryCount > 0 {
-                        self.log("Sync Retrying (\(retryCount) left): \(device.friendlyName ?? "Garmin") error: \(result.rawValue)")
+                        self.log("Retrying \(device.friendlyName ?? "Garmin") (\(retryCount) left)...")
                         // Retry after 2 seconds
                         DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
                             self.pushCurrentData(for: deviceId, rollbackValue: rollbackValue, retryCount: retryCount - 1)
@@ -428,8 +447,7 @@ extension GarminManager: IQAppMessageDelegate {
             var settings = deviceSettings[deviceId] ?? [:]
             if let sArrow = dict["showArrow"] as? Bool { settings["showArrow"] = sArrow }
             if let rFit = dict["recordToFit"] as? Bool { settings["recordToFit"] = rFit }
-            if let sTime = dict["showTime"] as? Bool { settings["showTime"] = sTime }
-            if let sTimeRem = dict["showTimeRemaining"] as? Bool { settings["showTimeRemaining"] = sTimeRem }
+            if let tMode = dict["timerMode"] as? Int { settings["timerMode"] = tMode }
             if let sDelta = dict["showDelta"] as? Bool { settings["showDelta"] = sDelta }
             if let pMode = dict["priorityMode"] as? Int { settings["priorityMode"] = pMode }
             deviceSettings[deviceId] = settings
