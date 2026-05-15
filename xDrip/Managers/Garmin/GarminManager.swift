@@ -187,22 +187,6 @@ public class GarminManager: NSObject {
     private var deviceSettings: [String: [String: Any]] = [:]
     private var pendingSettings: [String: [String: Any]] = [:]
     
-    public func getShowArrow(for deviceId: String) -> Bool {
-        return deviceSettings[deviceId]?["showArrow"] as? Bool ?? true
-    }
-    
-    public func setShowArrow(_ value: Bool, for deviceId: String) {
-        updateSetting("showArrow", value: value, for: deviceId)
-    }
-    
-    public func getRecordToFit(for deviceId: String) -> Bool {
-        return deviceSettings[deviceId]?["recordToFit"] as? Bool ?? true
-    }
-    
-    public func setRecordToFit(_ value: Bool, for deviceId: String) {
-        updateSetting("recordToFit", value: value, for: deviceId)
-    }
-    
     public func getTimerMode(for deviceId: String) -> TimerMode {
         let val = deviceSettings[deviceId]?["timerMode"] as? Int ?? TimerMode.elapsed.rawValue
         return TimerMode(rawValue: val) ?? .elapsed
@@ -210,14 +194,6 @@ public class GarminManager: NSObject {
     
     public func setTimerMode(_ mode: TimerMode, for deviceId: String) {
         updateSetting("timerMode", value: mode.rawValue, for: deviceId)
-    }
-    
-    public func getShowDelta(for deviceId: String) -> Bool {
-        return deviceSettings[deviceId]?["showDelta"] as? Bool ?? true
-    }
-    
-    public func setShowDelta(_ value: Bool, for deviceId: String) {
-        updateSetting("showDelta", value: value, for: deviceId)
     }
     
     public func getPriorityMode(for deviceId: String) -> PriorityMode {
@@ -243,6 +219,14 @@ public class GarminManager: NSObject {
     
     public func setLine2Layout(_ value: String, for deviceId: String) {
         updateSetting("l2", value: value, for: deviceId)
+    }
+    
+    public func getRecordToFit(for deviceId: String) -> Bool {
+        return deviceSettings[deviceId]?["recordToFit"] as? Bool ?? true
+    }
+    
+    public func setRecordToFit(_ value: Bool, for deviceId: String) {
+        updateSetting("recordToFit", value: value, for: deviceId)
     }
     
     private func updateSetting(_ key: String, value: Any, for deviceId: String) {
@@ -292,16 +276,14 @@ public class GarminManager: NSObject {
         
         guard let data = data else { return }
         
-        let message: [AnyHashable: Any] = [
+        var message: [AnyHashable: Any] = [
             "bgStr": data.bgStr,
             "trend": data.trendStr,
             "delta": data.deltaStr,
             "ts": data.timestamp,
             "bg": data.bgValue,
-            "showArrow": self.getShowArrow(for: deviceId),
             "recordToFit": self.getRecordToFit(for: deviceId),
             "timerMode": self.getTimerMode(for: deviceId).rawValue,
-            "showDelta": self.getShowDelta(for: deviceId),
             "priorityMode": self.getPriorityMode(for: deviceId).rawValue,
             "l1": self.getLine1Layout(for: deviceId),
             "l2": self.getLine2Layout(for: deviceId)
@@ -496,10 +478,8 @@ extension GarminManager: IQAppMessageDelegate {
             
             // SYNC SETTINGS FROM WATCH
             var settings = deviceSettings[deviceId] ?? [:]
-            if let sArrow = dict["showArrow"] as? Bool { settings["showArrow"] = sArrow }
             if let rFit = dict["recordToFit"] as? Bool { settings["recordToFit"] = rFit }
             if let tMode = dict["timerMode"] as? Int { settings["timerMode"] = tMode }
-            if let sDelta = dict["showDelta"] as? Bool { settings["showDelta"] = sDelta }
             if let pMode = dict["priorityMode"] as? Int { settings["priorityMode"] = pMode }
             if let l1 = dict["l1"] as? String { settings["l1"] = l1 }
             if let l2 = dict["l2"] as? String { settings["l2"] = l2 }

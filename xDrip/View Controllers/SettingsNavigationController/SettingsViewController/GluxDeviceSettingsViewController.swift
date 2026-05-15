@@ -185,7 +185,7 @@ extension GluxDeviceSettingsViewController: UITableViewDelegate {
                 }, cancelHandler: nil, didSelectRowHandler: nil), forRowWithIndex: indexPath.row, forSectionWithIndex: indexPath.section, withSettingsViewModel: nil, tableView: tableView, forUIViewController: self)
             }
         case .preferences:
-            if indexPath.row == 2 {
+            if indexPath.row == 1 {
                 let modes = [
                     GarminManager.TimerMode.off.description,
                     GarminManager.TimerMode.elapsed.description,
@@ -221,7 +221,7 @@ extension GluxDeviceSettingsViewController: UITableViewDataSource {
         switch section {
         case .info: return 1
         case .layout: return 3
-        case .preferences: return 4
+        case .preferences: return 2
         case .actions: return 1
         }
     }
@@ -246,28 +246,16 @@ extension GluxDeviceSettingsViewController: UITableViewDataSource {
         case .preferences:
             switch indexPath.row {
             case 0:
-                cell.textLabel?.text = "Display Trend Arrow"
-                let toggle = UISwitch()
-                toggle.isOn = GarminManager.shared.getShowArrow(for: deviceId)
-                toggle.addTarget(self, action: #selector(onShowArrowToggle(_:)), for: .valueChanged)
-                cell.accessoryView = toggle
-            case 1:
                 cell.textLabel?.text = "Record BG data to FIT"
                 let toggle = UISwitch()
                 toggle.isOn = GarminManager.shared.getRecordToFit(for: deviceId)
                 toggle.addTarget(self, action: #selector(onRecordToFitToggle(_:)), for: .valueChanged)
                 cell.accessoryView = toggle
-            case 2:
+            case 1:
                 cell.textLabel?.text = "Timer Mode"
                 cell.detailTextLabel?.text = GarminManager.shared.getTimerMode(for: deviceId).description
                 cell.accessoryType = .disclosureIndicator
                 cell.selectionStyle = .default
-            case 3:
-                cell.textLabel?.text = "Show Delta"
-                let toggle = UISwitch()
-                toggle.isOn = GarminManager.shared.getShowDelta(for: deviceId)
-                toggle.addTarget(self, action: #selector(onShowDeltaToggle(_:)), for: .valueChanged)
-                cell.accessoryView = toggle
             default: break
             }
         case .layout:
@@ -300,16 +288,8 @@ extension GluxDeviceSettingsViewController: UITableViewDataSource {
         return cell
     }
     
-    @objc private func onShowArrowToggle(_ sender: UISwitch) {
-        GarminManager.shared.setShowArrow(sender.isOn, for: deviceId)
-    }
-    
     @objc private func onRecordToFitToggle(_ sender: UISwitch) {
         GarminManager.shared.setRecordToFit(sender.isOn, for: deviceId)
-    }
-    
-    @objc private func onShowDeltaToggle(_ sender: UISwitch) {
-        GarminManager.shared.setShowDelta(sender.isOn, for: deviceId)
     }
     
     private func promptForCustomLayout(isLine1: Bool) {
