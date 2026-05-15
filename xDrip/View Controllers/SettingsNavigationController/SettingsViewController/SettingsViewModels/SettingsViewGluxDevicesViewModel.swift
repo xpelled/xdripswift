@@ -44,7 +44,7 @@ class SettingsViewGluxDevicesViewModel: NSObject, SettingsViewModelProtocol {
         if index < devices.count {
             let device = devices[index]
             GarminManager.shared.pingDevice(device)
-            return .showInfoText(title: "Pinging...", message: "Sending ping to \(device.friendlyName ?? "Garmin")...")
+            return .nothing
         }
         return .nothing
     }

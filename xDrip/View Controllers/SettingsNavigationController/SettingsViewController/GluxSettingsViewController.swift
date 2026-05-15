@@ -13,6 +13,26 @@ final class GluxSettingsViewController: UIViewController {
         super.viewDidLoad()
         title = "Glux"
         setupView()
+        
+        // Listen for status changes (handshakes, connections) from Garmin devices
+        GarminManager.shared.onStatusChange = { [weak self] in
+            self?.tableView.reloadData()
+        }
+        
+        // Listen for specific handshake responses for toasts
+        NotificationCenter.default.addObserver(self, selector: #selector(handleHandshake(_:)), name: GarminManager.GarminHandshakeReceived, object: nil)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        GarminManager.shared.onStatusChange = nil
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc private func handleHandshake(_ notification: Notification) {
+        if let deviceName = notification.userInfo?["deviceName"] as? String {
+            showToast(message: "✅ \(deviceName) Responded")
+        }
     }
     
     private func setupView() {
@@ -25,7 +45,6 @@ final class GluxSettingsViewController: UIViewController {
         tableView.separatorStyle = .singleLine
         tableView.separatorColor = .darkGray
         
-        // Use automatic dimension to allow headers/footers to grow with text
         tableView.sectionHeaderHeight = UITableView.automaticDimension
         tableView.estimatedSectionHeaderHeight = 40
         tableView.sectionFooterHeight = UITableView.automaticDimension
@@ -42,6 +61,36 @@ final class GluxSettingsViewController: UIViewController {
         
         tableView.dataSource = self
         tableView.delegate = self
+    }
+    
+    private func showToast(message: String) {
+        let toastLabel = UILabel()
+        toastLabel.backgroundColor = UIColor.black.withAlphaComponent(0.8)
+        toastLabel.textColor = .white
+        toastLabel.textAlignment = .center
+        toastLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        toastLabel.text = message
+        toastLabel.alpha = 0.0
+        toastLabel.layer.cornerRadius = 10
+        toastLabel.clipsToBounds = true
+        
+        let padding: CGFloat = 20
+        let labelHeight: CGFloat = 40
+        let labelWidth = min(view.frame.width - 40, message.size(withAttributes: [.font: toastLabel.font!]).width + 40)
+        
+        toastLabel.frame = CGRect(x: (view.frame.width - labelWidth) / 2, y: view.frame.height - 120, width: labelWidth, height: labelHeight)
+        
+        view.addSubview(toastLabel)
+        
+        UIView.animate(withDuration: 0.3, animations: {
+            toastLabel.alpha = 1.0
+        }) { _ in
+            UIView.animate(withDuration: 0.3, delay: 2.0, options: .curveEaseOut, animations: {
+                toastLabel.alpha = 0.0
+            }) { _ in
+                toastLabel.removeFromSuperview()
+            }
+        }
     }
 }
 
@@ -77,8 +126,16 @@ extension GluxSettingsViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         guard let section = Section(rawValue: indexPath.section) else { return }
-        let viewModel = section.viewModel(coreDataManager: nil)
         
+        if section == .devices {
+            let devices = GarminManager.shared.connectedDevices
+            if indexPath.row < devices.count {
+                let device = devices[indexPath.row]
+                showToast(message: "📡 Pinging \(device.friendlyName ?? "Garmin")...")
+            }
+        }
+        
+        let viewModel = section.viewModel(coreDataManager: nil)
         if viewModel.isEnabled(index: indexPath.row) {
             let action = viewModel.onRowSelect(index: indexPath.row)
             SettingsViewUtilities.runSelectedRowAction(selectedRowAction: action, forRowWithIndex: indexPath.row, forSectionWithIndex: indexPath.section, withSettingsViewModel: viewModel, tableView: tableView, forUIViewController: self)

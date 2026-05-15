@@ -7,6 +7,8 @@ import ConnectIQ
 public class GarminManager: NSObject {
     public static let shared = GarminManager()
     
+    public static let GarminHandshakeReceived = Notification.Name("GarminHandshakeReceived")
+    
     // Support for both Dev and Beta versions
     private let devAppId = UUID(uuidString: "A3421FEE-D289-106A-538C-B9547AB3F101")
     private let betaAppId = UUID(uuidString: "B37A01FE-ED28-9106-A538-CB9547AB3F01")
@@ -228,6 +230,8 @@ extension GarminManager: IQAppMessageDelegate {
             if let provider = garminDataProvider, let data = provider() {
                 pushViaConnectIQ(device: app.device, bgStr: data.bgStr, trendStr: data.trendStr, deltaStr: data.deltaStr, timestamp: data.timestamp, bgValue: data.bgValue)
             }
+            
+            NotificationCenter.default.post(name: GarminManager.GarminHandshakeReceived, object: nil, userInfo: ["deviceName": app.device.friendlyName ?? "Garmin"])
         } else if cmd == "stop" {
             log("Stop signal from \(app.device.friendlyName ?? "device")")
             self.deviceHandshakes.removeValue(forKey: deviceId)
