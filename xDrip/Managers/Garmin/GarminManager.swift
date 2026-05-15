@@ -18,7 +18,7 @@ public class GarminManager: NSObject {
         return [devAppId, betaAppId].compactMap { $0 }
     }
     
-    public var garminDataProvider: (() -> (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float)?)?
+    public var garminDataProvider: (() -> (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float, expectedInterval: Int)?)?
     public var onStatusChange: (() -> Void)?
     
     private var lastPushTime: Date = .distantPast
@@ -265,7 +265,7 @@ public class GarminManager: NSObject {
         #if canImport(ConnectIQ)
         guard let device = getSavedGarminDevices().first(where: { $0.uuid.uuidString == deviceId }) else { return }
         
-        var data: (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float)?
+        var data: (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float, expectedInterval: Int)?
         if Thread.isMainThread {
             data = garminDataProvider?()
         } else {
@@ -282,6 +282,7 @@ public class GarminManager: NSObject {
             "delta": data.deltaStr,
             "ts": data.timestamp,
             "bg": data.bgValue,
+            "expectedInterval": data.expectedInterval,
             "recordToFit": self.getRecordToFit(for: deviceId),
             "timerMode": self.getTimerMode(for: deviceId).rawValue,
             "priorityMode": self.getPriorityMode(for: deviceId).rawValue,
@@ -299,7 +300,7 @@ public class GarminManager: NSObject {
         #endif
     }
     
-    public func pushToGarmin(bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float) {
+    public func pushToGarmin(bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float, expectedInterval: Int) {
         guard Date().timeIntervalSince(lastPushTime) > 5.0 || lastPushTime == .distantPast else { return }
         
         #if canImport(ConnectIQ)
@@ -489,7 +490,7 @@ extension GarminManager: IQAppMessageDelegate {
             self.deviceHandshakes[deviceId] = Date()
             saveHandshakes()
             
-            var data: (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float)?
+            var data: (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float, expectedInterval: Int)?
             if Thread.isMainThread {
                 data = garminDataProvider?()
             } else {

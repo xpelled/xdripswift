@@ -1504,7 +1504,7 @@ final class RootViewController: UIViewController, ObservableObject {
                 
                 // Push latest BG to Garmin device via Connect IQ
                 if let garminData = buildGarminData() {
-                    GarminManager.shared.pushToGarmin(bgStr: garminData.bgStr, trendStr: garminData.trendStr, deltaStr: garminData.deltaStr, timestamp: garminData.timestamp, bgValue: garminData.bgValue)
+                    GarminManager.shared.pushToGarmin(bgStr: garminData.bgStr, trendStr: garminData.trendStr, deltaStr: garminData.deltaStr, timestamp: garminData.timestamp, bgValue: garminData.bgValue, expectedInterval: garminData.expectedInterval)
                 }
             }
         }
@@ -1512,10 +1512,39 @@ final class RootViewController: UIViewController, ObservableObject {
     
     /// Builds the data payload for the Garmin data field
     /// Returns individual components so the watch can compute minutes-ago live
-    private func buildGarminData() -> (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float)? {
+    private func buildGarminData() -> (bgStr: String, trendStr: String, deltaStr: String, timestamp: Int, bgValue: Float, expectedInterval: Int)? {
         guard let bgReadingsAccessor = bgReadingsAccessor else { return nil }
         
         let mgDl = UserDefaults.standard.bloodGlucoseUnitIsMgDl
+        
+        // 1. Calculate dynamic expected interval based on history
+        // Get absolute latest 2 readings (minimum separation 0) to find real sensor timing
+        let intervalReadings = bgReadingsAccessor.getLatestBgReadings(limit: 2, howOld: nil, forSensor: activeSensor, ignoreRawData: false, ignoreCalculatedValue: false)
+        
+        var expectedInterval = 300 // Default 5 mins (300s)
+        if intervalReadings.count == 2 {
+            let gap = abs(Int(intervalReadings[0].timeStamp.timeIntervalSince(intervalReadings[1].timeStamp)))
+            // Sanity check: Accept 30s to 15m as a valid sensor interval. 
+            // If it's outside this, it's likely a gap in history, not the sensor's native rate.
+            if gap >= 30 && gap <= 900 {
+                expectedInterval = gap
+            }
+        } else {
+            // Static fallbacks if history is insufficient
+            if UserDefaults.standard.isMaster {
+                // If "frequent" readings are enabled in settings, assume 1-min (60s) sensor
+                if UserDefaults.standard.storeFrequentReadingsInNightscout || UserDefaults.standard.storeFrequentReadingsInHealthKit {
+                    expectedInterval = 60
+                } else {
+                    expectedInterval = 300
+                }
+            } else {
+                // Follower usually follows 5m sources, but LL could be faster. 
+                // Default to 5m unless history tells us otherwise (handled above).
+                expectedInterval = 300
+            }
+        }
+
         let readings = bgReadingsAccessor.get2LatestBgReadings(minimumTimeIntervalInMinutes: 4.0)
         guard let lastReading = readings.first, lastReading.calculatedValue > 0.0 else { return nil }
         
@@ -1536,7 +1565,7 @@ final class RootViewController: UIViewController, ObservableObject {
         // Reading timestamp as Unix epoch seconds
         let timestamp = Int(lastReading.timeStamp.timeIntervalSince1970)
         
-        return (bgStr: bgStr, trendStr: trendStr, deltaStr: deltaStr, timestamp: timestamp, bgValue: bgNumeric)
+        return (bgStr: bgStr, trendStr: trendStr, deltaStr: deltaStr, timestamp: timestamp, bgValue: bgNumeric, expectedInterval: expectedInterval)
     }
     
     /// closes the SnoozeViewController if it is being presented now
@@ -3922,7 +3951,7 @@ extension RootViewController: FollowerDelegate {
                 
                 // Push latest BG to Garmin device via Connect IQ
                 if let garminData = buildGarminData() {
-                    GarminManager.shared.pushToGarmin(bgStr: garminData.bgStr, trendStr: garminData.trendStr, deltaStr: garminData.deltaStr, timestamp: garminData.timestamp, bgValue: garminData.bgValue)
+                    GarminManager.shared.pushToGarmin(bgStr: garminData.bgStr, trendStr: garminData.trendStr, deltaStr: garminData.deltaStr, timestamp: garminData.timestamp, bgValue: garminData.bgValue, expectedInterval: garminData.expectedInterval)
                 }
             }
         }
