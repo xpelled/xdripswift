@@ -961,7 +961,7 @@
 		4798BADE27BA79B8002583BC /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		47A05CC22EF160A9004DABE7 /* MedtrumEasyViewFollowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedtrumEasyViewFollowManager.swift; sourceTree = "<group>"; };
 		47A05CC32EF160A9004DABE7 /* MedtrumEasyViewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedtrumEasyViewModels.swift; sourceTree = "<group>"; };
-		47A05CCB2EF16110004DABE7 /* ConstantsMedtrumEasyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConstantsMedtrumEasyView.swift; path = xDrip/Constants/ConstantsMedtrumEasyView.swift; sourceTree = SOURCE_ROOT; };
+		47A05CCB2EF16110004DABE7 /* ConstantsMedtrumEasyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConstantsMedtrumEasyView.swift; path = xdrip/Constants/ConstantsMedtrumEasyView.swift; sourceTree = SOURCE_ROOT; };
 		47A0E6432D4E262A00B31C21 /* LiveActivityIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityIntent.swift; sourceTree = "<group>"; };
 		47A6ABDF2B790CC60047A4BA /* xDrip Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "xDrip Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		47A6ABE12B790CC60047A4BA /* xDripWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = xDripWatchApp.swift; sourceTree = "<group>"; };
@@ -1028,8 +1028,8 @@
 		47F4E09B2E699D6500087889 /* DexcomShareFollowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DexcomShareFollowManager.swift; sourceTree = "<group>"; };
 		47F4E09D2E69C59A00087889 /* DexcomShareModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DexcomShareModels.swift; sourceTree = "<group>"; };
 		47FB28072636B04200042FFB /* StatisticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsManager.swift; sourceTree = "<group>"; };
-		666E283826F7E54C00ACE4DF /* xDrip.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = xDrip.xcconfig; path = xDrip/xDrip.xcconfig; sourceTree = "<group>"; };
-		666E283926F7E54C00ACE4DF /* Version.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Version.xcconfig; path = xDrip/Version.xcconfig; sourceTree = "<group>"; };
+		666E283826F7E54C00ACE4DF /* xDrip.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = xDrip.xcconfig; path = xdrip/xDrip.xcconfig; sourceTree = "<group>"; };
+		666E283926F7E54C00ACE4DF /* Version.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Version.xcconfig; path = xdrip/Version.xcconfig; sourceTree = "<group>"; };
 		CE1B2FC825D0261500F642F5 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Alerts.strings; sourceTree = "<group>"; };
 		CE1B2FCD25D0264900F642F5 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/AlertTypesSettingsView.strings; sourceTree = "<group>"; };
 		CE1B2FCF25D0264900F642F5 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/LibreNFC.strings; sourceTree = "<group>"; };
@@ -2022,7 +2022,7 @@
 				47A05CC32EF160A9004DABE7 /* MedtrumEasyViewModels.swift */,
 			);
 			name = MedtrumEasyView;
-			path = xDrip/Managers/MedtrumEasyView;
+			path = xdrip/Managers/MedtrumEasyView;
 			sourceTree = SOURCE_ROOT;
 		};
 		47A6ABE02B790CC60047A4BA /* xDrip Watch App */ = {
@@ -2679,7 +2679,7 @@
 				F85DC2FA21D2CD3000B9F74A /* View Controllers */,
 				F8BECB00235CE3E20060DAE1 /* Views */,
 			);
-			path = xDrip;
+			path = xdrip;
 			sourceTree = "<group>";
 		};
 		F8AC42D021B342910078C348 /* Core Data */ = {
@@ -2690,7 +2690,7 @@
 				F85FF3C2252D0C32004E6FF1 /* xdrip.xcdatamodeld */,
 			);
 			name = "Core Data";
-			path = "xDrip/Core Data";
+			path = "xdrip/Core Data";
 			sourceTree = SOURCE_ROOT;
 		};
 		F8AF11F624B1E6D700AE5BA2 /* Errors */ = {
@@ -3147,7 +3147,7 @@
 				47930E812BC5A001000BD8A1 /* ConstantsWidget.swift */,
 			);
 			name = Constants;
-			path = xDrip/Constants;
+			path = xdrip/Constants;
 			sourceTree = SOURCE_ROOT;
 		};
 		F8EA6C8021B723A80082976B /* Utilities */ = {
@@ -3573,7 +3573,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-				1BE12E722FABC3F80022D401 /* Garmin */,
 		4716A4EC2B406C3D00419052 /* xDrip Widget Extension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4716A5012B406C3F00419052 /* Build configuration list for PBXNativeTarget "xDrip Widget Extension" */;
@@ -3686,7 +3685,7 @@
 				BuildIndependentTargetsInParallel = YES;
 				DefaultBuildSystemTypeForWorkspace = Latest;
 				LastSwiftUpdateCheck = 1530;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 2650;
 				ORGANIZATIONNAME = "Johan Degraeve";
 				TargetAttributes = {
 					4716A4EC2B406C3D00419052 = {
@@ -4322,7 +4321,7 @@
 				F8B3A847227F090E004BA588 /* SettingsViewNightscoutSettingsViewModel.swift in Sources */,
 				F8B3A79622635A25004BA588 /* AlertEntry+CoreDataClass.swift in Sources */,
 				F8A2BC3725DB0D6D001D1E78 /* BluetoothPeripheralManager+CGMMiaoMiaoTransmitterDelegate.swift in Sources */,
-				1BE12E7D2FB6FE710022D401 /* GluxSettingsViewController.swift in Sources */,
+				1BE12E7C2FB6FE710022D401 /* GluxSettingsViewController.swift in Sources */,
 				F8F7B8E6259A6EBF00C47B04 /* LibreSmoothing.swift in Sources */,
 				47EDD1432BDD4FE900C5A286 /* ConstantsWidgetExtension.swift in Sources */,
 				F8284237276BE78D0097E0C9 /* String+Dexcom.swift in Sources */,
@@ -5425,6 +5424,7 @@
 			baseConfigurationReference = 666E283826F7E54C00ACE4DF /* xDrip.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -5495,6 +5495,7 @@
 			baseConfigurationReference = 666E283826F7E54C00ACE4DF /* xDrip.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
