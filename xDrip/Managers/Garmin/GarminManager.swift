@@ -276,7 +276,7 @@ public class GarminManager: NSObject {
         
         guard let data = data else { return }
         
-        var message: [AnyHashable: Any] = [
+        let message: [AnyHashable: Any] = [
             "bgStr": data.bgStr,
             "trend": data.trendStr,
             "delta": data.deltaStr,

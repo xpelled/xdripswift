@@ -166,8 +166,8 @@ extension GluxDeviceSettingsViewController: UITableViewDelegate {
                 let isLine1 = (indexPath.row == 1)
                 let currentVal = isLine1 ? GarminManager.shared.getLine1Layout(for: deviceId) : GarminManager.shared.getLine2Layout(for: deviceId)
                 
-                var options = LayoutMode.allCases.map { $0.description }
-                var selectedIdx = LayoutMode.allCases.firstIndex(where: { $0.rawValue == currentVal }) ?? (LayoutMode.allCases.count - 1)
+                let options = LayoutMode.allCases.map { $0.description }
+                let selectedIdx = LayoutMode.allCases.firstIndex(where: { $0.rawValue == currentVal }) ?? (LayoutMode.allCases.count - 1)
                 
                 SettingsViewUtilities.runSelectedRowAction(selectedRowAction: .selectFromList(title: "Line \(isLine1 ? "1" : "2") Arrangement", data: options, selectedRow: selectedIdx, actionTitle: "Select", cancelTitle: "Cancel", actionHandler: { [weak self] index in
                     guard let self = self else { return }
